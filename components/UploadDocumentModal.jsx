@@ -7,9 +7,9 @@ import { DOC_TYPE_LABELS, DOC_TYPES } from "@/lib/clients";
 const FIELD_CLASS =
   "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 
-export function UploadDocumentModal({ clientId, document, onClose, onSaved }) {
+export function UploadDocumentModal({ clientId, document, defaultDocType, onClose, onSaved }) {
   const isEdit = Boolean(document);
-  const [docType, setDocType] = useState(document?.doc_type ?? DOC_TYPES[0]);
+  const [docType, setDocType] = useState(document?.doc_type ?? defaultDocType ?? DOC_TYPES[0]);
   const [label, setLabel] = useState(document?.label ?? "");
   const [plotNumber, setPlotNumber] = useState(document?.plot_number ?? "");
   const [file, setFile] = useState(null);

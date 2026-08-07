@@ -9,8 +9,7 @@ const VALID_OWNERS = ["tsl", "lhc", null];
 const VALID_STATUSES = ["Available", "Reserved", "Sold", "On Hold"];
 
 // Read-only detail fetch for the "View plot details" modal — any signed-in
-// dashboard role can view (matches the old standalone page's access, which
-// only required being logged in), not just those who can allocate/transfer.
+// dashboard role can view, not just those who can allocate/transfer.
 export async function GET(request, { params }) {
   const user = await currentUser();
   const role = getEffectiveRole(user);

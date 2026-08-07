@@ -7,6 +7,18 @@ import { formatGHS } from "@/lib/clients";
 import { ClientFormModal } from "./ClientFormModal";
 import { ClientDetailsModal } from "./ClientDetailsModal";
 
+const PILL_GHOST = "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-50";
+const PILL_DANGER = "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50";
+
+function initials(name) {
+  return (name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+}
+
 export function ClientsTable({ clients, canManage, canDelete }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -95,38 +107,38 @@ export function ClientsTable({ clients, canManage, canDelete }) {
             <tbody>
               {filtered.map((client) => (
                 <tr key={client.id} className="border-b border-navy-50 last:border-0 hover:bg-navy-50/50">
-                  <td className="px-4 py-3 font-medium text-navy-900">{client.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-navy-800 to-navy-950 text-[11px] font-bold text-white">
+                        {initials(client.name)}
+                      </div>
+                      <span className="font-medium text-navy-900">{client.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-navy-500">{client.phone}</td>
                   <td className="px-4 py-3 text-navy-500">{client.plotCount}</td>
                   <td className="px-4 py-3 text-navy-500">{formatGHS(client.totalPaid)}</td>
                   <td className="px-4 py-3">
                     {client.totalRemaining > 0 ? (
-                      <span className="font-semibold text-amber-700">{formatGHS(client.totalRemaining)}</span>
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                        {formatGHS(client.totalRemaining)}
+                      </span>
                     ) : (
                       <span className="text-navy-300">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-4">
-                      <button
-                        onClick={() => setViewingClientId(client.id)}
-                        className="text-xs font-semibold text-navy-700 hover:underline"
-                      >
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => setViewingClientId(client.id)} className={PILL_GHOST}>
                         View
                       </button>
                       {canManage ? (
-                        <button
-                          onClick={() => setEditingClient(client)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:underline"
-                        >
+                        <button onClick={() => setEditingClient(client)} className={PILL_GHOST}>
                           <Pencil className="h-3 w-3" /> Edit
                         </button>
                       ) : null}
                       {canDelete ? (
-                        <button
-                          onClick={() => setDeletingClient(client)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
-                        >
+                        <button onClick={() => setDeletingClient(client)} className={PILL_DANGER}>
                           <Trash2 className="h-3 w-3" /> Delete
                         </button>
                       ) : null}

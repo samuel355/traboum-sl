@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GoogleMap, InfoWindow, Polygon, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, OverlayView, Polygon, useJsApiLoader } from "@react-google-maps/api";
 import { AlertTriangle, List, Map as MapIcon, Pencil, X } from "lucide-react";
 import {
   canManagePlot,
@@ -40,6 +40,11 @@ const LEGEND = [
   { key: "hold", label: "On Hold" },
 ];
 
+// Plot numbers only render once zoomed in this close — with hundreds of
+// plots, labeling all of them at a zoomed-out view would just be clutter.
+const LABEL_MIN_ZOOM = 16.5;
+const labelPixelOffset = (width, height) => ({ x: -width / 2, y: -height / 2 });
+
 function useStats(plots) {
   return useMemo(() => {
     const base = { total: plots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
@@ -58,8 +63,27 @@ export function DashboardMapView({ plots, loadError, role }) {
   const [view, setView] = useState("map"); // "map" | "list"
   const [editingPlot, setEditingPlot] = useState(null);
   const [viewingPlotId, setViewingPlotId] = useState(null);
+  const [zoom, setZoom] = useState(16);
+  const [bounds, setBounds] = useState(null);
   const stats = useStats(plots);
   const canEdit = can(role, "editPlots");
+
+  const syncViewport = () => {
+    if (!mapRef.current) return;
+    setZoom(mapRef.current.getZoom());
+    setBounds(mapRef.current.getBounds());
+  };
+
+  const labeledPlots = useMemo(() => {
+    if (zoom < LABEL_MIN_ZOOM) return [];
+    return plots.filter((plot) => {
+      const path = getPolygonPath(plot);
+      if (path.length < 3) return false;
+      if (!bounds) return true;
+      const center = getPolygonCenter(path);
+      return center && bounds.contains(new window.google.maps.LatLng(center.lat, center.lng));
+    });
+  }, [plots, zoom, bounds]);
 
   function handlePlotSaved(updates) {
     // Reflect the change immediately in whichever card is open, then
@@ -154,6 +178,8 @@ export function DashboardMapView({ plots, loadError, role }) {
               mapRef.current = map;
               window.setTimeout(() => fitAll(map), 150);
             }}
+            onZoomChanged={syncViewport}
+            onIdle={syncViewport}
           >
             {plots.map((plot) => {
               const path = getPolygonPath(plot);
@@ -173,6 +199,26 @@ export function DashboardMapView({ plots, loadError, role }) {
                   }}
                   onClick={() => setSelected(plot)}
                 />
+              );
+            })}
+
+            {labeledPlots.map((plot) => {
+              const center = getPolygonCenter(getPolygonPath(plot));
+              if (!center) return null;
+              return (
+                <OverlayView
+                  key={`label-${plot.id}`}
+                  position={center}
+                  mapPaneName={OverlayView.OVERLAY_LAYER}
+                  getPixelPositionOffset={labelPixelOffset}
+                >
+                  <div
+                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap rounded-md border border-navy-900/15 px-1.5 py-0.5 text-[11px] font-bold leading-none text-black shadow-md"
+                    style={{ backgroundColor: "#ffffff" }}
+                  >
+                    {plotNumber(plot)}
+                  </div>
+                </OverlayView>
               );
             })}
 

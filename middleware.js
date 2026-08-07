@@ -1,9 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// Unlike get-plot, trabuom-sl has no public marketplace pages — everything
-// behind the root is protected. Only the sign-in flow and Clerk's own
-// satellite-domain handshake endpoint are left open.
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/unauthorized"]);
 
 export default clerkMiddleware(async (auth, req) => {

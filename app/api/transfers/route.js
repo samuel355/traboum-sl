@@ -80,8 +80,7 @@ export async function POST(request) {
       payment_reference: paymentReference || null,
       recorded_by: user.id,
       recorded_by_name: recordedByName,
-      // recorded_at defaults to now() in the DB — the explicit timestamp
-      // this needs to satisfy "there should be a timestamp on it".
+      // recorded_at defaults to now() in the DB.
     })
     .select()
     .single();

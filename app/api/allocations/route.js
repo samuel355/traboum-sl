@@ -123,8 +123,7 @@ export async function POST(request) {
     console.error("R2 upload failed for allocation", allocation.id, err);
   }
 
-  // Mark the plot Sold — allocation is the point of assignment, not a
-  // separate approval step, per the described flow.
+  // Allocation is the point of assignment, not a separate approval step.
   const { error: plotUpdateError } = await db
     .from(PLOT_TABLE)
     .update({ status: "Sold" })

@@ -6,9 +6,8 @@ import { DOC_TYPES, DOCUMENTS_TABLE } from "@/lib/clients";
 import { clientDocumentKey, deleteFromR2ByUrl, uploadToR2 } from "@/lib/r2";
 import { writeAuditLog } from "@/lib/audit";
 
-// One route for both metadata edits (label/type/plot number) and replacing
-// the underlying file — if `file` is present in the form, the old R2 object
-// is deleted and the new one takes its place.
+// Handles both metadata edits and file replacement — if `file` is present,
+// the old R2 object is deleted and the new one takes its place.
 export async function PATCH(request, { params }) {
   const user = await currentUser();
   const role = getEffectiveRole(user);
