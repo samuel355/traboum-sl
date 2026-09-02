@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { AuthAuditTracker } from "@/components/AuthAuditTracker";
 import "./globals.css";
 
 export const metadata = {
@@ -23,7 +24,10 @@ export default function RootLayout({ children }) {
       }}
     >
       <html lang="en">
-        <body className="font-sans antialiased">{children}</body>
+        <body className="font-sans antialiased">
+          <AuthAuditTracker />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

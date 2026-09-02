@@ -1,42 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Filter, Search, X } from "lucide-react";
+import { ACTION_LABELS, ACTION_TONES } from "@/lib/audit-actions";
+import { formatAuditDate } from "@/lib/audit-date";
 import { roleLabel } from "@/lib/roles";
 
-export const ACTION_LABELS = {
-  "allocation.created": "Allocation created",
-  "allocation.updated": "Allocation edited",
-  "allocation.deleted": "Allocation deleted",
-  "transfer.created": "Transfer recorded",
-  "plot.reserved": "Plot reserved",
-  "plot.updated": "Plot edited",
-  "user.created": "Staff created",
-  "user.role_updated": "Staff role updated",
-  "client.created": "Client added",
-  "client.updated": "Client edited",
-  "client.deleted": "Client deleted",
-  "document.uploaded": "Document uploaded",
-  "document.updated": "Document edited",
-  "document.deleted": "Document deleted",
-};
-
-const ACTION_TONES = {
-  "allocation.created": "bg-green-50 text-green-700",
-  "allocation.updated": "bg-purple-50 text-purple-700",
-  "allocation.deleted": "bg-red-50 text-red-700",
-  "transfer.created": "bg-navy-50 text-navy-700",
-  "plot.reserved": "bg-amber-50 text-amber-700",
-  "plot.updated": "bg-purple-50 text-purple-700",
-  "user.created": "bg-green-50 text-green-700",
-  "user.role_updated": "bg-navy-50 text-navy-700",
-  "client.created": "bg-green-50 text-green-700",
-  "client.updated": "bg-purple-50 text-purple-700",
-  "client.deleted": "bg-red-50 text-red-700",
-  "document.uploaded": "bg-green-50 text-green-700",
-  "document.updated": "bg-purple-50 text-purple-700",
-  "document.deleted": "bg-red-50 text-red-700",
-};
+const PAGE_SIZE = 20;
 
 function ActionBadge({ action }) {
   const tone = ACTION_TONES[action] || "bg-navy-50 text-navy-500";
@@ -49,48 +19,174 @@ function ActionBadge({ action }) {
 
 export function AuditTrailList({ entries }) {
   const [query, setQuery] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [page, setPage] = useState(1);
+
+  const actionOptions = useMemo(
+    () =>
+      [...new Set(entries.map((entry) => entry.action).filter(Boolean))].sort((a, b) =>
+        (ACTION_LABELS[a] || a).localeCompare(ACTION_LABELS[b] || b),
+      ),
+    [entries],
+  );
+
+  const roleOptions = useMemo(
+    () =>
+      [...new Set(entries.map((entry) => entry.actor_role).filter(Boolean))].sort((a, b) =>
+        roleLabel(a).localeCompare(roleLabel(b)),
+      ),
+    [entries],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return entries;
     return entries.filter((entry) =>
-      [entry.actor_name, entry.actor_id, ACTION_LABELS[entry.action] || entry.action, roleLabel(entry.actor_role)]
-        .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(q)),
+      (!q ||
+        [
+          entry.actor_name,
+          entry.actor_id,
+          entry.action,
+          ACTION_LABELS[entry.action] || entry.action,
+          roleLabel(entry.actor_role),
+          entry.created_at,
+          formatAuditDate(entry.created_at),
+          JSON.stringify(entry.metadata || {}),
+        ]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(q))) &&
+      (!actionFilter || entry.action === actionFilter) &&
+      (!roleFilter || entry.actor_role === roleFilter) &&
+      (!fromDate || new Date(entry.created_at) >= new Date(`${fromDate}T00:00:00`)) &&
+      (!toDate || new Date(entry.created_at) <= new Date(`${toDate}T23:59:59.999`)),
     );
-  }, [entries, query]);
+  }, [entries, query, actionFilter, roleFilter, fromDate, toDate]);
+
+  const hasFilters = Boolean(query || actionFilter || roleFilter || fromDate || toDate);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visibleEntries = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  function clearFilters() {
+    setQuery("");
+    setActionFilter("");
+    setRoleFilter("");
+    setFromDate("");
+    setToDate("");
+    setPage(1);
+  }
 
   return (
     <div>
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by person or action"
-          className="w-full rounded-lg border border-navy-100 py-2.5 pl-9 pr-3.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
-        />
+      <div className="rounded-xl border border-navy-100 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search name, action, role, time, or details"
+              className="w-full rounded-lg border border-navy-100 py-2.5 pl-9 pr-3.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-navy-500">
+            <Filter className="h-4 w-4 text-navy-400" />
+            <span>Filter activity</span>
+          </div>
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <select
+            value={actionFilter}
+            onChange={(e) => {
+              setActionFilter(e.target.value);
+              setPage(1);
+            }}
+            className="w-full rounded-lg border border-navy-100 bg-white px-3 py-2.5 text-sm text-navy-700 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
+          >
+            <option value="">All actions</option>
+            {actionOptions.map((action) => (
+              <option key={action} value={action}>
+                {ACTION_LABELS[action] || action}
+              </option>
+            ))}
+          </select>
+          <select
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setPage(1);
+            }}
+            className="w-full rounded-lg border border-navy-100 bg-white px-3 py-2.5 text-sm text-navy-700 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
+          >
+            <option value="">All roles</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>
+                {roleLabel(role)}
+              </option>
+            ))}
+          </select>
+          <label className="flex items-center gap-2 rounded-lg border border-navy-100 px-3 py-2 text-xs text-navy-400">
+            <span className="shrink-0">From</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setPage(1);
+              }}
+              className="min-w-0 flex-1 bg-transparent text-sm text-navy-700 outline-none"
+            />
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border border-navy-100 px-3 py-2 text-xs text-navy-400">
+            <span className="shrink-0">To</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+              }}
+              className="min-w-0 flex-1 bg-transparent text-sm text-navy-700 outline-none"
+            />
+          </label>
+        </div>
+
+        {hasFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-navy-600 hover:text-navy-900"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       <p className="mt-3 text-xs text-navy-400">
-        {query
-          ? `Showing ${filtered.length} of ${entries.length} entries matching "${query}"`
+        {hasFilters
+          ? `Showing ${filtered.length} of ${entries.length} entr${entries.length === 1 ? "y" : "ies"}`
           : `${entries.length} entr${entries.length === 1 ? "y" : "ies"}`}
       </p>
 
       <div className="mt-3 overflow-hidden rounded-xl border border-navy-100 bg-white">
         {!filtered.length ? (
           <p className="p-10 text-center text-sm text-navy-400">
-            {query ? `No activity matches "${query}".` : "No activity recorded yet."}
+            {hasFilters ? "No activity matches the selected search and filters." : "No activity recorded yet."}
           </p>
         ) : (
           <ul className="divide-y divide-navy-50">
-            {filtered.map((entry) => (
+            {visibleEntries.map((entry) => (
               <li key={entry.id} className="px-5 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <ActionBadge action={entry.action} />
                   <p className="text-xs text-navy-400">
-                    {new Date(entry.created_at).toLocaleString("en-GB")}
+                    {formatAuditDate(entry.created_at)}
                   </p>
                 </div>
                 <p className="mt-2 text-xs text-navy-500">
@@ -112,6 +208,32 @@ export function AuditTrailList({ entries }) {
           </ul>
         )}
       </div>
+
+      {filtered.length > PAGE_SIZE ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-navy-400">
+            Page {page} of {pageCount}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page === 1}
+              className="rounded-lg border border-navy-100 bg-white px-3 py-2 text-xs font-semibold text-navy-700 transition hover:bg-navy-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+              disabled={page === pageCount}
+              className="rounded-lg border border-navy-100 bg-white px-3 py-2 text-xs font-semibold text-navy-700 transition hover:bg-navy-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

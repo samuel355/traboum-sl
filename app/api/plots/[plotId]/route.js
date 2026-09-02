@@ -45,9 +45,9 @@ export async function GET(request, { params }) {
   return NextResponse.json({ plot, allocations: allocations ?? [], transfers: transfers ?? [] });
 }
 
-// Sysadmin-only correction endpoint — sets the tsl/lhc ownership split and/or
-// status directly on the plot row. Deliberately narrow: only these two
-// top-level columns, never the raw GIS properties blob shared with get-plot.
+// Authorized plot-edit endpoint — sets the tsl/lhc ownership split, status,
+// and editable plot metadata directly on the plot row. Deliberately narrow:
+// it never updates the raw GIS properties blob shared with get-plot.
 export async function PATCH(request, { params }) {
   const user = await currentUser();
   const role = getEffectiveRole(user);

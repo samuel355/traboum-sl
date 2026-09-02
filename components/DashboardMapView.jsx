@@ -18,7 +18,7 @@ import {
   statusKey,
   streetName,
 } from "@/lib/plots";
-import { can } from "@/lib/roles";
+import { can, ROLES } from "@/lib/roles";
 import { EditPlotModal } from "./EditPlotModal";
 import { PlotDetailsModal } from "./PlotDetailsModal";
 import { PlotListView } from "./PlotListView";
@@ -66,7 +66,7 @@ export function DashboardMapView({ plots, loadError, role }) {
   const [zoom, setZoom] = useState(16);
   const [bounds, setBounds] = useState(null);
   const stats = useStats(plots);
-  const canEdit = can(role, "editPlots");
+  const canEdit = role === ROLES.SYSADMIN || can(role, "editPlots");
 
   const syncViewport = () => {
     if (!mapRef.current) return;
@@ -312,7 +312,7 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
   const hasTransferPermission = can(role, "transfer");
   const canManageAllocate = canManagePlot(role, plot, "allocate");
   const canManageTransfer = canManagePlot(role, plot, "transfer");
-  const canEdit = can(role, "editPlots");
+  const canEdit = role === ROLES.SYSADMIN || can(role, "editPlots");
 
   return (
     <div className="pointer-events-auto w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-100">
@@ -329,10 +329,13 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
             {canEdit ? (
               <button
                 onClick={onEdit}
+                type="button"
                 title="Edit plot"
-                className="rounded-md bg-amber-50 p-1.5 text-amber-600 transition hover:bg-amber-100 hover:text-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-200"
+                aria-label="Edit plot"
+                className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 hover:text-amber-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-200"
               >
                 <Pencil className="h-3.5 w-3.5" />
+                <span>Edit</span>
               </button>
             ) : null}
             <button

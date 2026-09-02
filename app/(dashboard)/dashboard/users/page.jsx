@@ -2,8 +2,7 @@ import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { can, getEffectiveRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
-import { CreateStaffUserForm } from "@/components/CreateStaffUserForm";
-import { UserSearchAndAssign } from "@/components/UserSearchAndAssign";
+import { AddStaffMemberModal } from "@/components/AddStaffMemberModal";
 import { StaffTable } from "@/components/StaffTable";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +24,9 @@ export default async function UsersPage() {
         const u = await client.users.getUser(row.clerk_user_id);
         return {
           id: u.id,
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          username: u.username || "",
           name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username,
           email: u.primaryEmailAddress?.emailAddress,
           role: u.publicMetadata?.role || row.role,
@@ -36,32 +38,26 @@ export default async function UsersPage() {
   );
 
   return (
-    <div className="p-6 md:p-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-navy-900">Staff & Roles</h1>
-          <p className="mt-1 text-sm text-navy-500">
-            Create real staff accounts with credentials, or search for an existing user and assign a role.
-          </p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.12),_transparent_40%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] p-6 md:p-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Administration</p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">Staff & Roles</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              View current staff and add a new member when needed.
+            </p>
+          </div>
+          <AddStaffMemberModal canGrantSysadmin={can(role, "grantSysadmin")} />
         </div>
-        <a
-          href="#staff-create"
-          className="inline-flex items-center justify-center rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800"
-        >
-          Add staff member
-        </a>
-      </div>
 
-      <div id="staff-create" className="mt-8">
-        <CreateStaffUserForm canGrantSysadmin={can(role, "grantSysadmin")} />
-      </div>
-
-      <div className="mt-8">
-        <UserSearchAndAssign canGrantSysadmin={can(role, "grantSysadmin")} />
-      </div>
-
-      <div className="mt-8">
-        <StaffTable staff={staff} />
+        <div className="mt-8">
+          <StaffTable
+            staff={staff}
+            canDelete={can(role, "manageUsers")}
+            canGrantSysadmin={can(role, "grantSysadmin")}
+          />
+        </div>
       </div>
     </div>
   );

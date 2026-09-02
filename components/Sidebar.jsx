@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
 import {
   ArrowLeftRight,
   Contact,
@@ -14,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { roleLabel } from "@/lib/roles";
+import { SignOutAuditButton } from "./SignOutAuditButton";
 
 const NAV = [
   { href: "/dashboard/overview", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -61,7 +61,12 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
       </nav>
 
       <div className="border-t border-white/10 px-4 py-4 flex items-center gap-3">
-        <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
+        <SignOutAuditButton
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-xs font-bold text-navy-900"
+          aria-label="Sign out"
+        >
+          {name?.charAt(0)?.toUpperCase() || "S"}
+        </SignOutAuditButton>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-white truncate">{name || "Staff"}</p>
           <p className="text-[11px] text-navy-300">{roleLabel(role)}</p>

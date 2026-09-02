@@ -6,6 +6,8 @@ import { plotNumber, streetName } from "@/lib/plots";
 
 const FIELD_CLASS =
   "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
+const SELECT_CLASS =
+  "h-11 w-full rounded-lg border border-navy-100 bg-white px-3.5 text-sm text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 
 const OWNER_OPTIONS = [
   { value: "tsl", label: "Trabuom Stool Lands" },
@@ -112,7 +114,7 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Owner</label>
-            <select value={owner} onChange={(e) => setOwner(e.target.value)} className={FIELD_CLASS}>
+            <select value={owner} onChange={(e) => setOwner(e.target.value)} className={SELECT_CLASS}>
               {OWNER_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -123,7 +125,7 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className={FIELD_CLASS}>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className={SELECT_CLASS}>
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
                   {s}

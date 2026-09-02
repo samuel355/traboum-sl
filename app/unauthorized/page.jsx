@@ -1,5 +1,5 @@
-import { SignOutButton } from "@clerk/nextjs";
 import { ShieldAlert } from "lucide-react";
+import { SignOutAuditButton } from "@/components/SignOutAuditButton";
 
 export default function UnauthorizedPage() {
   return (
@@ -13,11 +13,9 @@ export default function UnauthorizedPage() {
           Your account isn&apos;t set up for Trabuom Stool Lands yet. If you believe this is a
           mistake, contact a system administrator to have a role assigned.
         </p>
-        <SignOutButton redirectUrl="/sign-in">
-          <button className="mt-6 w-full rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800">
-            Sign out
-          </button>
-        </SignOutButton>
+        <SignOutAuditButton className="mt-6 w-full rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800">
+          Sign out
+        </SignOutAuditButton>
       </div>
     </div>
   );

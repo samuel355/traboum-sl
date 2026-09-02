@@ -132,9 +132,11 @@ export async function POST(request) {
   }
 
   // Allocation is the point of assignment, not a separate approval step.
+  // Keep owner as the controlling organization; the buyer belongs in the
+  // allocation/client records and must not replace the inventory owner.
   const { error: plotUpdateError } = await db
     .from(PLOT_TABLE)
-    .update({ status: "Sold", owner: clientName })
+    .update({ status: "Sold" })
     .eq("id", plotId);
   if (plotUpdateError) {
     console.error("Failed to update plot status", plotUpdateError);

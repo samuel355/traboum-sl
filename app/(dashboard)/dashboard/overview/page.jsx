@@ -2,7 +2,8 @@ import { AlertCircle, MapPinned, Users, Wallet } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE, fetchAllPlots, plotStatus, statusKey } from "@/lib/plots";
 import { CLIENTS_TABLE, formatGHS, RESERVATIONS_TABLE } from "@/lib/clients";
-import { ACTION_LABELS } from "@/components/AuditTrailList";
+import { ACTION_LABELS } from "@/lib/audit-actions";
+import { formatAuditDate } from "@/lib/audit-date";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export default async function OverviewPage() {
                     <p className="truncate text-xs text-navy-400">{entry.actor_name || entry.actor_id}</p>
                   </div>
                   <span className="shrink-0 text-xs text-navy-400">
-                    {new Date(entry.created_at).toLocaleString("en-GB")}
+                    {formatAuditDate(entry.created_at)}
                   </span>
                 </li>
               ))}

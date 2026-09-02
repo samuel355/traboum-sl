@@ -12,21 +12,16 @@ export async function POST(request) {
   }
 
   const body = await request.json();
+  const userId = body.userId;
   const firstName = String(body.firstName ?? "").trim();
   const lastName = String(body.lastName ?? "").trim();
-  const usernameInput = String(body.username ?? "").trim();
+  const username = String(body.username ?? "").trim();
   const email = String(body.email ?? "").trim().toLowerCase();
-  const password = String(body.password ?? "");
+  const password = String(body.password ?? "").trim();
   const role = body.role;
 
-  if (!firstName || !lastName || !usernameInput || !email || !password || !ALL_TSL_ROLES.includes(role)) {
-    return NextResponse.json({ error: "First name, last name, username, email, password and role are required" }, { status: 400 });
-  }
-
-  const username = usernameInput.replace(/\s+/g, "").slice(0, 60);
-
-  if (password.length < 8) {
-    return NextResponse.json({ error: "Password must be at least 8 characters long" }, { status: 400 });
+  if (!userId || !firstName || !lastName || !username || !email || !ALL_TSL_ROLES.includes(role)) {
+    return NextResponse.json({ error: "User ID, first name, last name, username, email and role are required" }, { status: 400 });
   }
 
   if (role === ROLES.SYSADMIN && !can(requesterRole, "grantSysadmin")) {
@@ -36,41 +31,44 @@ export async function POST(request) {
   const client = await clerkClient();
 
   try {
-    const createdUser = await client.users.createUser({
+    const updatePayload = {
       firstName,
       lastName,
       username,
       emailAddress: [email],
-      password,
       publicMetadata: { role },
-    });
+    };
+
+    if (password) {
+      updatePayload.password = password;
+    }
+
+    const updatedUser = await client.users.updateUser(userId, updatePayload);
 
     await supabaseAdmin().from("tsl_staff").upsert({
-      clerk_user_id: createdUser.id,
+      clerk_user_id: userId,
       role,
       updated_by: requester.id,
       updated_at: new Date().toISOString(),
     });
 
     const requesterName = [requester.firstName, requester.lastName].filter(Boolean).join(" ") || requester.username;
+    const targetName = [updatedUser.firstName, updatedUser.lastName].filter(Boolean).join(" ") || updatedUser.username;
+
     await writeAuditLog({
       actorId: requester.id,
       actorName: requesterName,
       actorRole: requesterRole,
-      action: "user.created",
+      action: "user.role_updated",
       entityType: "clerk_user",
-      entityId: createdUser.id,
-      metadata: { targetName: `${firstName} ${lastName}`.trim(), email, role },
+      entityId: userId,
+      metadata: { targetName, email, role },
     });
 
-    return NextResponse.json({ ok: true, user: { id: createdUser.id, email } });
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Failed to create Clerk user", err);
-    const message =
-      err?.errors?.[0]?.longMessage ||
-      err?.errors?.[0]?.message ||
-      err?.message ||
-      "Failed to create staff account";
+    console.error("Failed to update staff user", err);
+    const message = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || "Failed to update user";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Pencil, Search } from "lucide-react";
-import { can } from "@/lib/roles";
+import { can, ROLES } from "@/lib/roles";
 import { formatArea, ownerLabel, plotNumber, plotOwner, plotStatus, streetName } from "@/lib/plots";
 import { StatusPill } from "./DashboardMapView";
 
@@ -10,7 +10,7 @@ const MAX_UNFILTERED = 300;
 
 export function PlotListView({ plots, role, onEdit, onView }) {
   const [query, setQuery] = useState("");
-  const canEdit = can(role, "editPlots");
+  const canEdit = role === ROLES.SYSADMIN || can(role, "editPlots");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
