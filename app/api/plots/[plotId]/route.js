@@ -8,6 +8,12 @@ import { writeAuditLog } from "@/lib/audit";
 const VALID_OWNERS = ["tsl", "lhc", null];
 const VALID_STATUSES = ["Available", "Reserved", "Sold", "On Hold"];
 
+function normalizeOwnerValue(value) {
+  if (value === null || value === undefined || value === "") return "tsl";
+  const trimmed = String(value).trim();
+  return trimmed || "tsl";
+}
+
 // Read-only detail fetch for the "View plot details" modal — any signed-in
 // dashboard role can view, not just those who can allocate/transfer.
 export async function GET(request, { params }) {
@@ -53,10 +59,14 @@ export async function PATCH(request, { params }) {
   const updates = {};
 
   if ("owner" in body) {
-    if (!VALID_OWNERS.includes(body.owner)) {
+    const normalizedOwner = normalizeOwnerValue(body.owner);
+    if (typeof normalizedOwner !== "string" || !normalizedOwner.length) {
       return NextResponse.json({ error: "Invalid owner" }, { status: 400 });
     }
-    updates.owner = body.owner;
+    if (!VALID_OWNERS.includes(normalizedOwner) && !body.owner) {
+      return NextResponse.json({ error: "Invalid owner" }, { status: 400 });
+    }
+    updates.owner = normalizedOwner;
   }
   if ("status" in body) {
     if (!VALID_STATUSES.includes(body.status)) {

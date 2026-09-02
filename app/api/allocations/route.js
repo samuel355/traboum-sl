@@ -24,6 +24,9 @@ export async function POST(request) {
   if (!plotId || !clientName || !clientPhone) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (!String(plotNumber || "").trim() || !String(streetName || "").trim()) {
+    return NextResponse.json({ error: "Plot number and street name cannot be empty." }, { status: 400 });
+  }
   if (!Number.isFinite(saleAmount) || saleAmount <= 0) {
     return NextResponse.json({ error: "Amount must be greater than zero" }, { status: 400 });
   }
@@ -104,7 +107,7 @@ export async function POST(request) {
   const date = new Date();
   const referenceNumber = `TSL-${String(allocation.id).slice(-8).toUpperCase()}`;
   const fileNumber = `TSL-${String(plotNumber || "PLOT").replace(/\s+/g, "").toUpperCase()}-${date.getFullYear()}`;
-  const pdfBuffer = generateAllocationPdf({
+  const pdfBuffer = await generateAllocationPdf({
     allocationId: allocation.id,
     referenceNumber,
     fileNumber,
@@ -131,7 +134,7 @@ export async function POST(request) {
   // Allocation is the point of assignment, not a separate approval step.
   const { error: plotUpdateError } = await db
     .from(PLOT_TABLE)
-    .update({ status: "Sold" })
+    .update({ status: "Sold", owner: clientName })
     .eq("id", plotId);
   if (plotUpdateError) {
     console.error("Failed to update plot status", plotUpdateError);
