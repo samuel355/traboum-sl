@@ -2,8 +2,7 @@ import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { can, getEffectiveRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
-import { InviteStaffForm } from "@/components/InviteStaffForm";
-import { PendingInvitesTable } from "@/components/PendingInvitesTable";
+import { CreateStaffUserForm } from "@/components/CreateStaffUserForm";
 import { UserSearchAndAssign } from "@/components/UserSearchAndAssign";
 import { StaffTable } from "@/components/StaffTable";
 
@@ -36,25 +35,25 @@ export default async function UsersPage() {
     }),
   );
 
-  const { data: pendingInvitations } = await client.invitations.getInvitationList({ status: "pending" });
-  const invites = pendingInvitations.map((inv) => ({
-    id: inv.id,
-    emailAddress: inv.emailAddress,
-    role: inv.publicMetadata?.role,
-    createdAt: inv.createdAt,
-  }));
-
   return (
     <div className="p-6 md:p-10">
-      <h1 className="text-2xl font-bold text-navy-900">Staff & Roles</h1>
-      <p className="mt-1 text-sm text-navy-500">
-        Invite new staff with a role already assigned, or search for a signed-up user by email to
-        assign one.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-900">Staff & Roles</h1>
+          <p className="mt-1 text-sm text-navy-500">
+            Create real staff accounts with credentials, or search for an existing user and assign a role.
+          </p>
+        </div>
+        <a
+          href="#staff-create"
+          className="inline-flex items-center justify-center rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800"
+        >
+          Add staff member
+        </a>
+      </div>
 
-      <div className="mt-6">
-        <InviteStaffForm canGrantSysadmin={can(role, "grantSysadmin")} />
-        <PendingInvitesTable invites={invites} />
+      <div id="staff-create" className="mt-8">
+        <CreateStaffUserForm canGrantSysadmin={can(role, "grantSysadmin")} />
       </div>
 
       <div className="mt-8">

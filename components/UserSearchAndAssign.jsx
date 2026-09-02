@@ -62,9 +62,29 @@ export function UserSearchAndAssign({ canGrantSysadmin }) {
   }
 
   return (
-    <div className="rounded-xl border border-navy-100 bg-white p-5">
-      <form onSubmit={search} className="flex gap-2">
+    <div id="staff-search" className="rounded-xl border border-navy-100 bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-navy-900">Assign staff role</p>
+          <p className="mt-1 text-xs text-navy-500">Search for a signed-up user and assign their role.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-navy-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-navy-700">
+            Direct assignment
+          </span>
+          <button
+            type="button"
+            onClick={() => document.getElementById("staff-email-input")?.focus()}
+            className="rounded-lg border border-navy-200 bg-white px-3 py-1.5 text-xs font-semibold text-navy-800 hover:bg-navy-50"
+          >
+            Add staff member
+          </button>
+        </div>
+      </div>
+
+      <form onSubmit={search} className="mt-4 flex gap-2">
         <input
+          id="staff-email-input"
           type="email"
           required
           placeholder="staff-member@email.com"
@@ -78,7 +98,7 @@ export function UserSearchAndAssign({ canGrantSysadmin }) {
           className="flex items-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:opacity-60"
         >
           {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          Search
+          Search user
         </button>
       </form>
       <p className="mt-2 text-xs text-navy-400">

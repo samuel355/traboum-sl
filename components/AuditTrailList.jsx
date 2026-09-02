@@ -11,6 +11,7 @@ export const ACTION_LABELS = {
   "transfer.created": "Transfer recorded",
   "plot.reserved": "Plot reserved",
   "plot.updated": "Plot edited",
+  "user.created": "Staff created",
   "user.role_updated": "Staff role updated",
   "client.created": "Client added",
   "client.updated": "Client edited",
@@ -18,8 +19,6 @@ export const ACTION_LABELS = {
   "document.uploaded": "Document uploaded",
   "document.updated": "Document edited",
   "document.deleted": "Document deleted",
-  "staff.invited": "Staff invited",
-  "staff.invite_revoked": "Invitation revoked",
 };
 
 const ACTION_TONES = {
@@ -29,6 +28,7 @@ const ACTION_TONES = {
   "transfer.created": "bg-navy-50 text-navy-700",
   "plot.reserved": "bg-amber-50 text-amber-700",
   "plot.updated": "bg-purple-50 text-purple-700",
+  "user.created": "bg-green-50 text-green-700",
   "user.role_updated": "bg-navy-50 text-navy-700",
   "client.created": "bg-green-50 text-green-700",
   "client.updated": "bg-purple-50 text-purple-700",
@@ -36,8 +36,6 @@ const ACTION_TONES = {
   "document.uploaded": "bg-green-50 text-green-700",
   "document.updated": "bg-purple-50 text-purple-700",
   "document.deleted": "bg-red-50 text-red-700",
-  "staff.invited": "bg-green-50 text-green-700",
-  "staff.invite_revoked": "bg-red-50 text-red-700",
 };
 
 function ActionBadge({ action }) {
