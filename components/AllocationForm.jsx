@@ -22,6 +22,12 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
     setState("submitting");
     setError(null);
 
+    if (!String(plotNumber || "").trim() || !String(streetName || "").trim()) {
+      setError("Plot number and street name cannot be empty.");
+      setState("error");
+      return;
+    }
+
     try {
       const res = await fetch("/api/allocations", {
         method: "POST",

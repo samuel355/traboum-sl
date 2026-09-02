@@ -8,7 +8,6 @@ const FIELD_CLASS =
   "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 
 const OWNER_OPTIONS = [
-  { value: "", label: "Not set" },
   { value: "tsl", label: "Trabuom Stool Lands" },
   { value: "lhc", label: "GetOnePlot (Company)" },
 ];
@@ -29,7 +28,7 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
     plot.properties?.Street_Nam ??
     "";
 
-  const [owner, setOwner] = useState(plot.owner ?? "");
+  const [owner, setOwner] = useState(plot.owner ?? "tsl");
   const [plotNumberValue, setPlotNumberValue] = useState(String(initialPlotNumber ?? ""));
   const [streetNameValue, setStreetNameValue] = useState(String(initialStreetName ?? ""));
   const [status, setStatus] = useState(plot.status ?? "Available");

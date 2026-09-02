@@ -7,7 +7,7 @@ import { GoogleMap, InfoWindow, OverlayView, Polygon, useJsApiLoader } from "@re
 import { AlertTriangle, List, Map as MapIcon, Pencil, X } from "lucide-react";
 import {
   canManagePlot,
-  formatArea,
+  formatPlotSize,
   getPlotStyle,
   getPolygonCenter,
   getPolygonPath,
@@ -315,70 +315,74 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
   const canEdit = can(role, "editPlots");
 
   return (
-    <div className="w-72 overflow-hidden rounded-2xl bg-white">
-      <div className="flex items-start justify-between gap-3 border-b border-navy-50 p-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-base font-bold text-navy-900">Plot {plotNumber(plot)}</p>
-            <StatusPill status={status} />
+    <div className="pointer-events-auto w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-100">
+      <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="truncate text-base font-bold text-slate-900">Plot {plotNumber(plot)}</p>
+              <StatusPill status={status} />
+            </div>
+            <p className="mt-1 truncate text-sm text-slate-500">{streetName(plot) || "Street not set"}</p>
           </div>
-          <p className="mt-0.5 truncate text-sm text-navy-500">{streetName(plot) || "Street not set"}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {canEdit ? (
+          <div className="flex shrink-0 items-center gap-1.5">
+            {canEdit ? (
+              <button
+                onClick={onEdit}
+                title="Edit plot"
+                className="rounded-md bg-amber-50 p-1.5 text-amber-600 transition hover:bg-amber-100 hover:text-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-200"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
             <button
-              onClick={onEdit}
-              title="Edit plot"
-              className="rounded-md p-1 text-navy-300 hover:text-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-200"
+              onClick={onClose}
+              className="rounded-md bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" />
             </button>
-          ) : null}
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-navy-300 hover:text-navy-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-200"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          </div>
         </div>
       </div>
 
       <div className="space-y-4 p-4">
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-xs text-navy-400">Area</p>
-            <p className="font-semibold text-navy-900">{formatArea(plot)}</p>
+          <div className="rounded-xl bg-slate-50 p-2.5">
+            <p className="text-[10px] uppercase tracking-wide text-slate-400">Size</p>
+            <p className="mt-1 whitespace-pre-line font-semibold text-slate-900">{formatPlotSize(plot)}</p>
           </div>
-          <div>
-            <p className="text-xs text-navy-400">Owner</p>
-            <p className="font-semibold text-navy-900">{ownerLabel(owner)}</p>
+          <div className="rounded-xl bg-slate-50 p-2.5">
+            <p className="text-[10px] uppercase tracking-wide text-slate-400">Owner</p>
+            <p className="mt-1 font-semibold text-slate-900">{ownerLabel(owner)}</p>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {key === "available" || key === "reserved" ? (
             canManageAllocate ? (
               <Link
                 href={`/dashboard/allocate/${plot.id}`}
-                className="block w-full rounded-lg bg-navy-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-navy-800"
+                className="block w-full rounded-xl bg-navy-900 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-navy-800"
               >
                 Buy plot
               </Link>
             ) : hasAllocatePermission ? (
-              <p className="text-xs text-navy-400">
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 {owner
                   ? `This plot belongs to ${ownerLabel(owner)} — Trabuom Stool Lands staff can't act on it from here.`
                   : "This plot's owner hasn't been set yet — ask a sysadmin to assign it first."}
               </p>
             ) : (
-              <p className="text-xs text-navy-400">You don&apos;t have permission to allocate plots.</p>
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                You don&apos;t have permission to allocate plots.
+              </p>
             )
           ) : null}
 
           {key === "available" && canManageAllocate ? (
             <Link
               href={`/dashboard/reserve/${plot.id}`}
-              className="block w-full rounded-lg border border-navy-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 hover:bg-navy-50"
+              className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Reserve plot
             </Link>
@@ -388,28 +392,32 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
             canManageTransfer ? (
               <Link
                 href={`/dashboard/transfers/new?plotId=${plot.id}`}
-                className="block w-full rounded-lg bg-navy-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-navy-800"
+                className="block w-full rounded-xl bg-slate-900 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
               >
                 Transfer
               </Link>
             ) : hasTransferPermission ? (
-              <p className="text-xs text-navy-400">
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 {owner
                   ? `This plot belongs to ${ownerLabel(owner)} — Trabuom Stool Lands staff can't transfer it from here.`
                   : "This plot's owner hasn't been set yet — ask a sysadmin to assign it first."}
               </p>
             ) : (
-              <p className="text-xs text-navy-400">You don&apos;t have permission to transfer plots.</p>
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                You don&apos;t have permission to transfer plots.
+              </p>
             )
           ) : null}
 
           {key === "hold" || key === "other" ? (
-            <p className="text-xs text-navy-400">This plot is {status.toLowerCase()}.</p>
+            <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              This plot is {status.toLowerCase()}.
+            </p>
           ) : null}
 
           <button
             onClick={onView}
-            className="block w-full rounded-lg px-4 py-2 text-center text-sm font-medium text-navy-500 hover:bg-navy-50"
+            className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             View plot details
           </button>
