@@ -16,7 +16,22 @@ const OWNER_OPTIONS = [
 const STATUS_OPTIONS = ["Available", "Reserved", "Sold", "On Hold"];
 
 export function EditPlotModal({ plot, onClose, onSaved }) {
+  const initialPlotNumber =
+    plot.plotNumber ??
+    plot.properties?.plotNumber ??
+    plot.plot_number ??
+    plot.properties?.Plot_No ??
+    "";
+  const initialStreetName =
+    plot.streetName ??
+    plot.properties?.streetName ??
+    plot.street_name ??
+    plot.properties?.Street_Nam ??
+    "";
+
   const [owner, setOwner] = useState(plot.owner ?? "");
+  const [plotNumberValue, setPlotNumberValue] = useState(String(initialPlotNumber ?? ""));
+  const [streetNameValue, setStreetNameValue] = useState(String(initialStreetName ?? ""));
   const [status, setStatus] = useState(plot.status ?? "Available");
   const [state, setState] = useState("idle"); // idle | submitting | error
   const [error, setError] = useState(null);
@@ -26,7 +41,12 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
     setState("submitting");
     setError(null);
 
-    const updates = { owner: owner || null, status };
+    const updates = {
+      owner: owner || null,
+      status,
+      plotNumber: plotNumberValue.trim() || null,
+      streetName: streetNameValue.trim() || null,
+    };
 
     try {
       const res = await fetch(`/api/plots/${plot.id}`, {
@@ -69,6 +89,28 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
         </div>
 
         <form onSubmit={onSubmit} className="mt-5 space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-navy-700">Plot number</label>
+            <input
+              type="text"
+              value={plotNumberValue}
+              onChange={(e) => setPlotNumberValue(e.target.value)}
+              className={FIELD_CLASS}
+              placeholder="e.g. 12A"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-navy-700">Street name</label>
+            <input
+              type="text"
+              value={streetNameValue}
+              onChange={(e) => setStreetNameValue(e.target.value)}
+              className={FIELD_CLASS}
+              placeholder="e.g. Main Street"
+            />
+          </div>
+
           <div>
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Owner</label>
             <select value={owner} onChange={(e) => setOwner(e.target.value)} className={FIELD_CLASS}>

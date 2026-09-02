@@ -65,6 +65,18 @@ export async function PATCH(request, { params }) {
     updates.status = body.status;
   }
 
+  const incomingPlotNumber = "plotNumber" in body ? body.plotNumber : "plot_number" in body ? body.plot_number : undefined;
+  if ("plotNumber" in body || "plot_number" in body) {
+    const trimmed = typeof incomingPlotNumber === "string" ? incomingPlotNumber.trim() : incomingPlotNumber ?? null;
+    updates.plot_number = trimmed || null;
+  }
+
+  const incomingStreetName = "streetName" in body ? body.streetName : "street_name" in body ? body.street_name : undefined;
+  if ("streetName" in body || "street_name" in body) {
+    const trimmed = typeof incomingStreetName === "string" ? incomingStreetName.trim() : incomingStreetName ?? null;
+    updates.street_name = trimmed || null;
+  }
+
   if (!Object.keys(updates).length) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
@@ -74,7 +86,7 @@ export async function PATCH(request, { params }) {
     .from(PLOT_TABLE)
     .update(updates)
     .eq("id", params.plotId)
-    .select("id, owner, status")
+    .select("id, owner, status, plot_number, street_name")
     .single();
 
   if (error || !data) {

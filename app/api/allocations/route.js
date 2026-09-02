@@ -102,8 +102,13 @@ export async function POST(request) {
     .eq("status", "active");
 
   const date = new Date();
+  const referenceNumber = `TSL-${String(allocation.id).slice(-8).toUpperCase()}`;
+  const fileNumber = `TSL-${String(plotNumber || "PLOT").replace(/\s+/g, "").toUpperCase()}-${date.getFullYear()}`;
   const pdfBuffer = generateAllocationPdf({
     allocationId: allocation.id,
+    referenceNumber,
+    fileNumber,
+    allocationDate: date.toISOString(),
     plotNumber,
     streetName,
     clientName,
