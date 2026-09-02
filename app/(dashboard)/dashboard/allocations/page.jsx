@@ -1,3 +1,5 @@
+import { currentUser } from "@clerk/nextjs/server";
+import { can, getEffectiveRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE } from "@/lib/plots";
 import { AllocationsTable } from "@/components/AllocationsTable";
@@ -5,6 +7,9 @@ import { AllocationsTable } from "@/components/AllocationsTable";
 export const dynamic = "force-dynamic";
 
 export default async function AllocationsPage() {
+  const user = await currentUser();
+  const role = getEffectiveRole(user);
+
   const { data: allocations, error } = await supabaseAdmin()
     .from(ALLOCATIONS_TABLE)
     .select("*")
@@ -22,7 +27,11 @@ export default async function AllocationsPage() {
             Couldn&apos;t load allocations: {error.message}
           </p>
         ) : (
-          <AllocationsTable allocations={allocations ?? []} />
+          <AllocationsTable
+            allocations={allocations ?? []}
+            canManage={can(role, "allocate")}
+            canDelete={can(role, "manageUsers")}
+          />
         )}
       </div>
     </div>

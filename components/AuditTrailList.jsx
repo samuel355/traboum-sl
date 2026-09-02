@@ -6,6 +6,8 @@ import { roleLabel } from "@/lib/roles";
 
 export const ACTION_LABELS = {
   "allocation.created": "Allocation created",
+  "allocation.updated": "Allocation edited",
+  "allocation.deleted": "Allocation deleted",
   "transfer.created": "Transfer recorded",
   "plot.reserved": "Plot reserved",
   "plot.updated": "Plot edited",
@@ -22,6 +24,8 @@ export const ACTION_LABELS = {
 
 const ACTION_TONES = {
   "allocation.created": "bg-green-50 text-green-700",
+  "allocation.updated": "bg-purple-50 text-purple-700",
+  "allocation.deleted": "bg-red-50 text-red-700",
   "transfer.created": "bg-navy-50 text-navy-700",
   "plot.reserved": "bg-amber-50 text-amber-700",
   "plot.updated": "bg-purple-50 text-purple-700",

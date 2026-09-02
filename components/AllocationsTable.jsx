@@ -1,11 +1,31 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Pencil, Search, Trash2 } from "lucide-react";
+import { ALLOCATION_STATUS_STYLE, allocationStatusLabel } from "@/lib/plots";
 import { ViewDocumentButton } from "./ViewDocumentButton";
+import { AllocationEditModal } from "./AllocationEditModal";
 
-export function AllocationsTable({ allocations }) {
+const PILL_GHOST = "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-50";
+const PILL_DANGER = "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50";
+
+function StatusBadge({ status }) {
+  const tone = ALLOCATION_STATUS_STYLE[status] || ALLOCATION_STATUS_STYLE.pending;
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
+      {allocationStatusLabel(status)}
+    </span>
+  );
+}
+
+export function AllocationsTable({ allocations, canManage, canDelete }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
+  const [editingAllocation, setEditingAllocation] = useState(null);
+  const [deletingAllocation, setDeletingAllocation] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deleteState, setDeleteState] = useState("idle");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -16,6 +36,27 @@ export function AllocationsTable({ allocations }) {
         .some((field) => String(field).toLowerCase().includes(q)),
     );
   }, [allocations, query]);
+
+  function handleSaved() {
+    setEditingAllocation(null);
+    router.refresh();
+  }
+
+  async function confirmDelete() {
+    setDeleteState("submitting");
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/allocations/${deletingAllocation.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete allocation");
+      setDeletingAllocation(null);
+      setDeleteState("idle");
+      router.refresh();
+    } catch (err) {
+      setDeleteError(err.message);
+      setDeleteState("error");
+    }
+  }
 
   return (
     <div>
@@ -49,7 +90,9 @@ export function AllocationsTable({ allocations }) {
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Agent</th>
                 <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Document</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -68,6 +111,9 @@ export function AllocationsTable({ allocations }) {
                     {new Date(row.created_at).toLocaleDateString("en-GB")}
                   </td>
                   <td className="px-4 py-3">
+                    <StatusBadge status={row.status} />
+                  </td>
+                  <td className="px-4 py-3">
                     {row.pdf_url ? (
                       <ViewDocumentButton
                         url={row.pdf_url}
@@ -78,12 +124,71 @@ export function AllocationsTable({ allocations }) {
                       <span className="text-navy-300">—</span>
                     )}
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      {canManage ? (
+                        <button onClick={() => setEditingAllocation(row)} className={PILL_GHOST}>
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                      ) : null}
+                      {canDelete ? (
+                        <button onClick={() => setDeletingAllocation(row)} className={PILL_DANGER}>
+                          <Trash2 className="h-3 w-3" /> Delete
+                        </button>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {editingAllocation ? (
+        <AllocationEditModal
+          allocation={editingAllocation}
+          onClose={() => setEditingAllocation(null)}
+          onSaved={handleSaved}
+        />
+      ) : null}
+
+      {deletingAllocation ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/40 p-4"
+          onClick={() => setDeletingAllocation(null)}
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-panel" onClick={(e) => e.stopPropagation()}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Delete Allocation</p>
+            <h2 className="mt-0.5 text-lg font-bold text-navy-900">
+              Plot {deletingAllocation.plot_number || deletingAllocation.plot_id}
+            </h2>
+            <p className="mt-2 text-sm text-navy-500">
+              This can&apos;t be undone. The plot will be set back to Available and the allocation
+              document removed.
+            </p>
+            {deleteError ? <p className="mt-2 text-sm text-red-600">{deleteError}</p> : null}
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingAllocation(null)}
+                className="flex-1 rounded-lg border border-navy-200 px-4 py-2.5 text-sm font-semibold text-navy-700 hover:bg-navy-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleteState === "submitting"}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleteState === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
