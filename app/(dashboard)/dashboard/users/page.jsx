@@ -39,25 +39,23 @@ export default async function UsersPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.12),_transparent_40%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] p-6 md:p-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Administration</p>
-            <h1 className="mt-1 text-2xl font-bold text-slate-900">Staff & Roles</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              View current staff and add a new member when needed.
-            </p>
-          </div>
-          <AddStaffMemberModal canGrantSysadmin={can(role, "grantSysadmin")} />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Administration</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">Staff & Roles</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            View current staff and add a new member when needed.
+          </p>
         </div>
+        <AddStaffMemberModal canGrantSysadmin={can(role, "grantSysadmin")} />
+      </div>
 
-        <div className="mt-8">
-          <StaffTable
-            staff={staff}
-            canDelete={can(role, "manageUsers")}
-            canGrantSysadmin={can(role, "grantSysadmin")}
-          />
-        </div>
+      <div className="mt-8">
+        <StaffTable
+          staff={staff}
+          canDelete={can(role, "manageUsers")}
+          canGrantSysadmin={can(role, "grantSysadmin")}
+        />
       </div>
     </div>
   );

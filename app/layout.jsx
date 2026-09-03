@@ -20,6 +20,7 @@ export default function RootLayout({ children }) {
           colorText: "#0B0E2D",
           colorBackground: "#FFFFFF",
           borderRadius: "10px",
+          fontFamily: '"Outfit", system-ui, sans-serif',
         },
       }}
     >

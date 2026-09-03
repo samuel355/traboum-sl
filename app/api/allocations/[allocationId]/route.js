@@ -48,9 +48,14 @@ export async function PATCH(request, { params }) {
     if (!STATUS_KEYS.includes(body.status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
-    if (body.status === "collected" && existing.status === "pending") {
+    const nextStatus = {
+      pending: "signed",
+      signed: "ready_to_collect",
+      ready_to_collect: "collected",
+    }[existing.status];
+    if (body.status !== existing.status && body.status !== nextStatus) {
       return NextResponse.json(
-        { error: "This allocation must be signed by the chief before it can be marked as collected." },
+        { error: "Allocation statuses must be updated in order." },
         { status: 409 },
       );
     }

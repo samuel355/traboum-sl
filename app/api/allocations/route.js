@@ -165,7 +165,7 @@ export async function POST(request) {
       pdfFilename: `allocation-${plotNumber}.pdf`,
     }),
     notifyPhones(
-      `TSL: Plot ${plotNumber} has been allocated to ${clientName} by ${agentName}. — GetOnePlot`,
+      `TSL: Plot ${plotNumber} has been allocated to ${clientName} by ${agentName}. — Trabuom Stool Lands`,
     ),
     writeAuditLog({
       actorId: user.id,

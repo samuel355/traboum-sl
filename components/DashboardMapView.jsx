@@ -47,8 +47,9 @@ const labelPixelOffset = (width, height) => ({ x: -width / 2, y: -height / 2 });
 
 function useStats(plots) {
   return useMemo(() => {
-    const base = { total: plots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
-    plots.forEach((plot) => {
+    const stoolLandPlots = plots.filter((plot) => plotOwner(plot) === "tsl");
+    const base = { total: stoolLandPlots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
+    stoolLandPlots.forEach((plot) => {
       const key = statusKey(plotStatus(plot));
       if (key in base) base[key] += 1;
     });
@@ -323,7 +324,9 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
               <p className="truncate text-base font-bold text-slate-900">Plot {plotNumber(plot)}</p>
               <StatusPill status={status} />
             </div>
-            <p className="mt-1 truncate text-sm text-slate-500">{streetName(plot) || "Street not set"}</p>
+            <p className="mt-1 truncate text-sm font-medium text-slate-600">
+              {streetName(plot) || "Street not set"}
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {canEdit ? (

@@ -22,9 +22,10 @@ export function AllocationEditModal({ allocation, onClose, onSaved }) {
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
-  // Sign-before-collect: don't even let the form submit a jump straight from
-  // pending to collected, matching the server-side check.
-  const collectedLocked = allocation.status === "pending" && form.status === "collected";
+  const currentStatusIndex = ALLOCATION_STAGES.findIndex((stage) => stage.key === allocation.status);
+  const selectedStatusIndex = ALLOCATION_STAGES.findIndex((stage) => stage.key === form.status);
+  const invalidStatusChange =
+    selectedStatusIndex !== currentStatusIndex && selectedStatusIndex !== currentStatusIndex + 1;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -69,14 +70,18 @@ export function AllocationEditModal({ allocation, onClose, onSaved }) {
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Status</label>
             <select className={FIELD_CLASS} value={form.status} onChange={update("status")}>
               {ALLOCATION_STAGES.map((stage) => (
-                <option key={stage.key} value={stage.key} disabled={stage.key === "collected" && allocation.status === "pending"}>
+                <option
+                  key={stage.key}
+                  value={stage.key}
+                  disabled={stage.key !== allocation.status && ALLOCATION_STAGES[currentStatusIndex + 1]?.key !== stage.key}
+                >
                   {stage.label}
                 </option>
               ))}
             </select>
-            {collectedLocked ? (
+            {invalidStatusChange ? (
               <p className="mt-1.5 text-xs text-amber-600">
-                Must be signed by the chief before it can be marked as collected.
+                Allocation statuses must be updated in order.
               </p>
             ) : null}
           </div>
@@ -125,7 +130,7 @@ export function AllocationEditModal({ allocation, onClose, onSaved }) {
             </button>
             <button
               type="submit"
-              disabled={state === "submitting" || collectedLocked}
+              disabled={state === "submitting" || invalidStatusChange}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:opacity-60"
             >
               {state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

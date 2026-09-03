@@ -158,7 +158,7 @@ export async function POST(request) {
       pdfFilename: `transfer-${plotNumber}.pdf`,
     }),
     notifyPhones(
-      `TSL: Plot ${plotNumber} allocation transferred to ${newClientName} by ${recordedByName}. — GetOnePlot`,
+      `TSL: Plot ${plotNumber} allocation transferred to ${newClientName} by ${recordedByName}. — Trabuom Stool Lands`,
     ),
     writeAuditLog({
       actorId: user.id,

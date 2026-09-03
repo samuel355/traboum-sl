@@ -1,6 +1,6 @@
 import { AlertCircle, MapPinned, Users, Wallet } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ALLOCATIONS_TABLE, fetchAllPlots, plotStatus, statusKey } from "@/lib/plots";
+import { ALLOCATIONS_TABLE, fetchAllPlots, plotOwner, plotStatus, statusKey } from "@/lib/plots";
 import { CLIENTS_TABLE, formatGHS, RESERVATIONS_TABLE } from "@/lib/clients";
 import { ACTION_LABELS } from "@/lib/audit-actions";
 import { formatAuditDate } from "@/lib/audit-date";
@@ -19,8 +19,9 @@ export default async function OverviewPage() {
       db.from("tsl_audit_log").select("*").order("created_at", { ascending: false }).limit(8),
     ]);
 
-  const plotStats = { total: plots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
-  plots.forEach((plot) => {
+  const stoolLandPlots = plots.filter((plot) => plotOwner(plot) === "tsl");
+  const plotStats = { total: stoolLandPlots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
+  stoolLandPlots.forEach((plot) => {
     const key = statusKey(plotStatus(plot));
     if (key in plotStats) plotStats[key] += 1;
   });

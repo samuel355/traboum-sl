@@ -57,7 +57,7 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update plot");
-      onSaved(updates);
+      onSaved(data.plot);
     } catch (err) {
       setError(err.message);
       setState("error");

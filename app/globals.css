@@ -8,9 +8,19 @@
   --font-sans: "Outfit", system-ui, sans-serif;
 }
 
+html,
 body {
+  font-family: var(--font-sans);
   color: #0b0e2d;
   background: #f7f8fb;
+}
+
+button,
+input,
+select,
+textarea,
+.gm-style {
+  font-family: inherit;
 }
 
 /* Thin, unobtrusive scrollbars for dashboard panels */

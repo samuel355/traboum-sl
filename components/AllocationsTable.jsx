@@ -9,6 +9,11 @@ import { AllocationEditModal } from "./AllocationEditModal";
 
 const PILL_GHOST = "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-50";
 const PILL_DANGER = "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50";
+const NEXT_STATUS = {
+  pending: { value: "signed", label: "Mark signed" },
+  signed: { value: "ready_to_collect", label: "Mark ready" },
+  ready_to_collect: { value: "collected", label: "Mark collected" },
+};
 
 function StatusBadge({ status }) {
   const tone = ALLOCATION_STATUS_STYLE[status] || ALLOCATION_STATUS_STYLE.pending;
@@ -26,6 +31,8 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
   const [deletingAllocation, setDeletingAllocation] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [deleteState, setDeleteState] = useState("idle");
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  const [statusError, setStatusError] = useState(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,6 +47,25 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
   function handleSaved() {
     setEditingAllocation(null);
     router.refresh();
+  }
+
+  async function updateStatus(allocation, status) {
+    setUpdatingStatusId(allocation.id);
+    setStatusError(null);
+    try {
+      const res = await fetch(`/api/allocations/${allocation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update allocation status");
+      router.refresh();
+    } catch (err) {
+      setStatusError(err.message);
+    } finally {
+      setUpdatingStatusId(null);
+    }
   }
 
   async function confirmDelete() {
@@ -76,6 +102,10 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
           : `${allocations.length} allocation${allocations.length === 1 ? "" : "s"}`}
       </p>
 
+      {statusError ? (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{statusError}</p>
+      ) : null}
+
       <div className="mt-3 overflow-hidden rounded-xl border border-navy-100 bg-white">
         {!filtered.length ? (
           <p className="p-10 text-center text-sm text-navy-400">
@@ -111,7 +141,20 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                     {new Date(row.created_at).toLocaleDateString("en-GB")}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={row.status} />
+                    <div className="flex flex-col items-start gap-1.5">
+                      <StatusBadge status={row.status} />
+                      {canManage && NEXT_STATUS[row.status] ? (
+                        <button
+                          type="button"
+                          onClick={() => updateStatus(row, NEXT_STATUS[row.status].value)}
+                          disabled={updatingStatusId === row.id}
+                          className="inline-flex items-center gap-1 rounded-md border border-navy-200 px-2 py-1 text-[11px] font-semibold text-navy-700 hover:bg-navy-50 disabled:opacity-60"
+                        >
+                          {updatingStatusId === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                          {NEXT_STATUS[row.status].label}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     {row.pdf_url ? (
