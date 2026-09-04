@@ -214,8 +214,8 @@ export function DashboardMapView({ plots, loadError, role }) {
                   getPixelPositionOffset={labelPixelOffset}
                 >
                   <div
-                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap rounded-md border border-navy-900/15 px-1.5 py-0.5 text-[11px] font-bold leading-none text-black shadow-md"
-                    style={{ backgroundColor: "#ffffff" }}
+                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold leading-none text-white"
+                    style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.75)" }}
                   >
                     {plotNumber(plot)}
                   </div>
