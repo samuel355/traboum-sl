@@ -26,8 +26,12 @@ import { PlotListView } from "./PlotListView";
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const MAP_OPTIONS = {
   clickableIcons: false,
+  controlSize: 28,
   fullscreenControl: true,
   mapTypeControl: true,
+  mapTypeControlOptions: { style: 2 },
+  rotateControl: true,
+  scaleControl: true,
   streetViewControl: true,
   zoomControl: true,
   gestureHandling: "greedy",
@@ -214,8 +218,12 @@ export function DashboardMapView({ plots, loadError, role }) {
                   getPixelPositionOffset={labelPixelOffset}
                 >
                   <div
-                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap rounded bg-black/50 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm"
-                    style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.9)" }}
+                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap rounded-md border border-white/80 px-2 py-1 text-xs font-extrabold leading-none text-white shadow-lg"
+                    style={{
+                      backgroundColor: "#0b0e2d",
+                      textShadow: "0 1px 2px rgba(0, 0, 0, 0.95)",
+                      WebkitTextStroke: "0.2px currentColor",
+                    }}
                   >
                     {plotNumber(plot)}
                   </div>
