@@ -26,9 +26,9 @@ import { PlotListView } from "./PlotListView";
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const MAP_OPTIONS = {
   clickableIcons: false,
-  fullscreenControl: false,
-  mapTypeControl: false,
-  streetViewControl: false,
+  fullscreenControl: true,
+  mapTypeControl: true,
+  streetViewControl: true,
   zoomControl: true,
   gestureHandling: "greedy",
 };
@@ -214,8 +214,8 @@ export function DashboardMapView({ plots, loadError, role }) {
                   getPixelPositionOffset={labelPixelOffset}
                 >
                   <div
-                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold leading-none text-white"
-                    style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.75)" }}
+                    className="pointer-events-none inline-flex select-none items-center justify-center whitespace-nowrap rounded bg-black/50 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm"
+                    style={{ textShadow: "0 1px 2px rgba(0, 0, 0, 0.9)" }}
                   >
                     {plotNumber(plot)}
                   </div>
