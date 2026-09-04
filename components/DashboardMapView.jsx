@@ -4,7 +4,17 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GoogleMap, InfoWindow, OverlayView, Polygon, useJsApiLoader } from "@react-google-maps/api";
-import { AlertTriangle, List, Map as MapIcon, Pencil, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Layers,
+  List,
+  Map as MapIcon,
+  Maximize,
+  Pencil,
+  ZoomIn,
+  ZoomOut,
+  X,
+} from "lucide-react";
 import {
   canManagePlot,
   formatPlotSize,
@@ -26,15 +36,9 @@ import { PlotListView } from "./PlotListView";
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const MAP_OPTIONS = {
   clickableIcons: false,
-  controlSize: 28,
-  fullscreenControl: true,
-  mapTypeControl: true,
-  mapTypeControlOptions: { style: 2 },
-  rotateControl: true,
-  scaleControl: true,
-  streetViewControl: true,
-  zoomControl: true,
-  gestureHandling: "greedy",
+  disableDefaultUI: true,
+  gestureHandling: "cooperative",
+  scrollwheel: true,
 };
 
 const LEGEND = [
@@ -64,8 +68,11 @@ function useStats(plots) {
 export function DashboardMapView({ plots, loadError, role }) {
   const router = useRouter();
   const mapRef = useRef(null);
+  const mapContainerRef = useRef(null);
   const [selected, setSelected] = useState(null);
   const [view, setView] = useState("map"); // "map" | "list"
+  const [mapType, setMapType] = useState("roadmap");
+  const [isMapTypeMenuOpen, setIsMapTypeMenuOpen] = useState(false);
   const [editingPlot, setEditingPlot] = useState(null);
   const [viewingPlotId, setViewingPlotId] = useState(null);
   const [zoom, setZoom] = useState(16);
@@ -121,6 +128,21 @@ export function DashboardMapView({ plots, loadError, role }) {
     if (any) map.fitBounds(bounds, 60);
   };
 
+  const changeMapType = (type) => {
+    setMapType(type);
+    mapRef.current?.setMapTypeId(type);
+    setIsMapTypeMenuOpen(false);
+  };
+
+  const toggleFullscreen = async () => {
+    if (!mapContainerRef.current) return;
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    await mapContainerRef.current.requestFullscreen();
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <header className="border-b border-navy-100 bg-white px-6 py-4 flex flex-wrap items-center justify-between gap-4">
@@ -160,7 +182,7 @@ export function DashboardMapView({ plots, loadError, role }) {
         </div>
       </header>
 
-      <div className="relative flex-1">
+      <div ref={mapContainerRef} className="relative flex-1">
         {view === "list" ? (
           <PlotListView plots={plots} role={role} onEdit={setEditingPlot} onView={(plot) => setViewingPlotId(plot.id)} />
         ) : loadError ? (
@@ -178,7 +200,7 @@ export function DashboardMapView({ plots, loadError, role }) {
             mapContainerStyle={MAP_CONTAINER_STYLE}
             center={center}
             zoom={16}
-            options={MAP_OPTIONS}
+            options={{ ...MAP_OPTIONS, mapTypeId: mapType }}
             onLoad={(map) => {
               mapRef.current = map;
               window.setTimeout(() => fitAll(map), 150);
@@ -255,6 +277,70 @@ export function DashboardMapView({ plots, loadError, role }) {
               : null}
           </GoogleMap>
         )}
+
+        {view === "map" && isLoaded && !mapsLoadError ? (
+          <div className="absolute right-3 top-3 z-10 flex flex-col gap-2 rounded-xl bg-white/95 p-2 shadow-lg ring-1 ring-navy-100">
+            <button
+              type="button"
+              onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 16) + 1)}
+              className="rounded-lg p-2 text-navy-700 transition hover:bg-navy-50"
+              title="Zoom in"
+              aria-label="Zoom in"
+            >
+              <ZoomIn className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 16) - 1)}
+              className="rounded-lg p-2 text-navy-700 transition hover:bg-navy-50"
+              title="Zoom out"
+              aria-label="Zoom out"
+            >
+              <ZoomOut className="h-5 w-5" />
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsMapTypeMenuOpen((open) => !open)}
+                className="rounded-lg p-2 text-navy-700 transition hover:bg-navy-50"
+                title="Change map type"
+                aria-label="Change map type"
+                aria-expanded={isMapTypeMenuOpen}
+              >
+                <Layers className="h-5 w-5" />
+              </button>
+              {isMapTypeMenuOpen ? (
+                <div className="absolute right-full top-0 mr-2 w-32 overflow-hidden rounded-lg bg-white py-1 shadow-lg ring-1 ring-navy-100">
+                  {[
+                    ["roadmap", "Road map"],
+                    ["satellite", "Satellite"],
+                    ["hybrid", "Hybrid"],
+                  ].map(([type, label]) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => changeMapType(type)}
+                      className={`block w-full px-3 py-2 text-left text-xs font-medium transition hover:bg-navy-50 ${
+                        mapType === type ? "bg-navy-50 text-navy-900" : "text-navy-600"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="rounded-lg p-2 text-navy-700 transition hover:bg-navy-50"
+              title="Toggle fullscreen"
+              aria-label="Toggle fullscreen"
+            >
+              <Maximize className="h-5 w-5" />
+            </button>
+          </div>
+        ) : null}
 
         {view === "map" ? (
           <div className="pointer-events-none absolute bottom-4 left-4 flex gap-3 rounded-xl border border-navy-100 bg-white/95 px-4 py-2.5 shadow-card">
