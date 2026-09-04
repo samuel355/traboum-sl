@@ -11,6 +11,7 @@ import {
   Map as MapIcon,
   Maximize,
   Pencil,
+  Search,
   ZoomIn,
   ZoomOut,
   X,
@@ -71,14 +72,29 @@ export function DashboardMapView({ plots, loadError, role }) {
   const mapContainerRef = useRef(null);
   const [selected, setSelected] = useState(null);
   const [view, setView] = useState("map"); // "map" | "list"
+  const [filterQuery, setFilterQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterOwner, setFilterOwner] = useState("all");
   const [mapType, setMapType] = useState("roadmap");
   const [isMapTypeMenuOpen, setIsMapTypeMenuOpen] = useState(false);
   const [editingPlot, setEditingPlot] = useState(null);
   const [viewingPlotId, setViewingPlotId] = useState(null);
   const [zoom, setZoom] = useState(16);
   const [bounds, setBounds] = useState(null);
-  const stats = useStats(plots);
   const canEdit = role === ROLES.SYSADMIN || can(role, "editPlots");
+  const filteredPlots = useMemo(() => {
+    const query = filterQuery.trim().toLowerCase();
+    return plots.filter((plot) => {
+      const matchesQuery =
+        !query ||
+        String(plotNumber(plot)).toLowerCase().includes(query) ||
+        streetName(plot).toLowerCase().includes(query);
+      const matchesStatus = filterStatus === "all" || statusKey(plotStatus(plot)) === filterStatus;
+      const matchesOwner = filterOwner === "all" || plotOwner(plot) === filterOwner;
+      return matchesQuery && matchesStatus && matchesOwner;
+    });
+  }, [plots, filterQuery, filterStatus, filterOwner]);
+  const stats = useStats(filteredPlots);
 
   const syncViewport = () => {
     if (!mapRef.current) return;
@@ -88,14 +104,14 @@ export function DashboardMapView({ plots, loadError, role }) {
 
   const labeledPlots = useMemo(() => {
     if (zoom < LABEL_MIN_ZOOM) return [];
-    return plots.filter((plot) => {
+    return filteredPlots.filter((plot) => {
       const path = getPolygonPath(plot);
       if (path.length < 3) return false;
       if (!bounds) return true;
       const center = getPolygonCenter(path);
       return center && bounds.contains(new window.google.maps.LatLng(center.lat, center.lng));
     });
-  }, [plots, zoom, bounds]);
+  }, [filteredPlots, zoom, bounds]);
 
   function handlePlotSaved(updates) {
     // Reflect the change immediately in whichever card is open, then
@@ -180,15 +196,63 @@ export function DashboardMapView({ plots, loadError, role }) {
             </button>
           </div>
         </div>
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
+            <input
+              value={filterQuery}
+              onChange={(event) => setFilterQuery(event.target.value)}
+              placeholder="Search plot number or street"
+              className="w-full rounded-lg border border-navy-100 py-2 pl-9 pr-3 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
+            />
+          </div>
+          <FilterSelect value={filterStatus} onChange={setFilterStatus} options={[
+            ["all", "All statuses"],
+            ["available", "Available"],
+            ["reserved", "Reserved"],
+            ["sold", "Sold"],
+            ["hold", "On hold"],
+          ]} />
+          <FilterSelect value={filterOwner} onChange={setFilterOwner} options={[
+            ["all", "All owners"],
+            ["tsl", "Trabuom Stool Lands"],
+            ["lhc", "GetOnePlot (Company)"],
+          ]} />
+          {filterQuery || filterStatus !== "all" || filterOwner !== "all" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setFilterQuery("");
+                setFilterStatus("all");
+                setFilterOwner("all");
+              }}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-navy-600 hover:bg-navy-50"
+            >
+              Clear filters
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <div ref={mapContainerRef} className="relative flex-1">
         {view === "list" ? (
-          <PlotListView plots={plots} role={role} onEdit={setEditingPlot} onView={(plot) => setViewingPlotId(plot.id)} />
+          <PlotListView
+            plots={filteredPlots}
+            totalPlots={plots.length}
+            role={role}
+            query={filterQuery}
+            status={filterStatus}
+            owner={filterOwner}
+            onQueryChange={setFilterQuery}
+            onStatusChange={setFilterStatus}
+            onOwnerChange={setFilterOwner}
+            onEdit={setEditingPlot}
+            onView={(plot) => setViewingPlotId(plot.id)}
+          />
         ) : loadError ? (
           <ErrorState message={`Couldn't load plots: ${loadError}`} />
-        ) : !plots.length ? (
-          <ErrorState message="No plots found in the trabuom table." />
+        ) : !filteredPlots.length ? (
+          <ErrorState message="No plots match the selected filters." />
         ) : !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || mapsLoadError ? (
           <ErrorState message="Map unavailable — set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY." />
         ) : !isLoaded ? (
@@ -208,7 +272,7 @@ export function DashboardMapView({ plots, loadError, role }) {
             onZoomChanged={syncViewport}
             onIdle={syncViewport}
           >
-            {plots.map((plot) => {
+            {filteredPlots.map((plot) => {
               const path = getPolygonPath(plot);
               if (path.length < 3) return null;
               const style = getPlotStyle(plot);
@@ -361,7 +425,7 @@ export function DashboardMapView({ plots, loadError, role }) {
         <EditPlotModal plot={editingPlot} onClose={() => setEditingPlot(null)} onSaved={handlePlotSaved} />
       ) : null}
       {viewingPlotId ? (
-        <PlotDetailsModal plotId={viewingPlotId} onClose={() => setViewingPlotId(null)} />
+        <PlotDetailsModal plotId={viewingPlotId} onClose={() => setViewingPlotId(null)} role={role} />
       ) : null}
     </div>
   );
@@ -373,6 +437,22 @@ function StatPill({ value, label, tone = "text-navy-900" }) {
       <p className={`text-sm font-bold ${tone}`}>{value}</p>
       <p className="text-[10px] text-navy-400">{label}</p>
     </div>
+  );
+}
+
+function FilterSelect({ value, onChange, options }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="rounded-lg border border-navy-100 bg-white px-3 py-2 text-sm text-navy-700 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
+    >
+      {options.map(([optionValue, label]) => (
+        <option key={optionValue} value={optionValue}>
+          {label}
+        </option>
+      ))}
+    </select>
   );
 }
 

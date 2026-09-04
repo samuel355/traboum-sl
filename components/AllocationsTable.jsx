@@ -38,7 +38,15 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
     const q = query.trim().toLowerCase();
     if (!q) return allocations;
     return allocations.filter((row) =>
-      [row.plot_number, row.street_name, row.client_name, row.client_phone, row.agent]
+      [
+        row.plot_number,
+        row.street_name,
+        row.client_name,
+        row.client_phone,
+        row.agent,
+        row.reference_number,
+        row.file_number,
+      ]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q)),
     );
@@ -91,7 +99,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by plot, client, or phone"
+          placeholder="Search by plot, client, reference, or file number"
           className="w-full rounded-lg border border-navy-100 py-2.5 pl-9 pr-3.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
         />
       </div>
@@ -116,6 +124,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
             <thead>
               <tr className="border-b border-navy-100 bg-navy-50 text-left text-xs uppercase tracking-wide text-navy-400">
                 <th className="px-4 py-3">Plot</th>
+                <th className="px-4 py-3">Reference / file</th>
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Agent</th>
@@ -133,6 +142,10 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                     {row.street_name ? (
                       <span className="block text-xs text-navy-400">{row.street_name}</span>
                     ) : null}
+                  </td>
+                  <td className="px-4 py-3 text-navy-500">
+                    <span className="block font-medium text-navy-700">{row.reference_number || "—"}</span>
+                    <span className="block text-xs text-navy-400">{row.file_number || "—"}</span>
                   </td>
                   <td className="px-4 py-3 text-navy-700">{row.client_name}</td>
                   <td className="px-4 py-3 text-navy-500">{row.client_phone}</td>
@@ -159,7 +172,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                   <td className="px-4 py-3">
                     {row.pdf_url ? (
                       <ViewDocumentButton
-                        url={row.pdf_url}
+                        url={`${row.pdf_url}${row.updated_at ? `?v=${encodeURIComponent(row.updated_at)}` : ""}`}
                         title={`Allocation — Plot ${row.plot_number}`}
                         className="inline-flex items-center gap-1.5 font-semibold text-navy-900 hover:underline"
                       />

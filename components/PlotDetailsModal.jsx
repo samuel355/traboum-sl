@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
+import { can } from "@/lib/roles";
 import { formatArea, ownerLabel, plotNumber, plotOwner, plotStatus, streetName } from "@/lib/plots";
+import { AllocationEditModal } from "./AllocationEditModal";
 import { ViewDocumentButton } from "./ViewDocumentButton";
 
-export function PlotDetailsModal({ plotId, onClose }) {
+export function PlotDetailsModal({ plotId, onClose, role }) {
   const [state, setState] = useState("loading"); // loading | ready | error
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [editingAllocation, setEditingAllocation] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,9 +89,18 @@ export function PlotDetailsModal({ plotId, onClose }) {
                   <HistoryRow
                     key={row.id}
                     title={row.client_name}
-                    subtitle={[row.client_phone, row.agent].filter(Boolean).join(" · ")}
+                    subtitle={[
+                      row.client_phone,
+                      row.agent,
+                      row.reference_number,
+                      row.file_number,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                     date={row.created_at}
                     pdfUrl={row.pdf_url}
+                    canEdit={can(role, "allocate")}
+                    onEdit={() => setEditingAllocation(row)}
                   />
                 ))
               )}
@@ -112,6 +124,21 @@ export function PlotDetailsModal({ plotId, onClose }) {
           </>
         )}
       </div>
+      {editingAllocation ? (
+        <AllocationEditModal
+          allocation={editingAllocation}
+          onClose={() => setEditingAllocation(null)}
+          onSaved={(updatedAllocation) => {
+            setData((current) => ({
+              ...current,
+              allocations: current.allocations.map((row) =>
+                row.id === updatedAllocation.id ? updatedAllocation : row,
+              ),
+            }));
+            setEditingAllocation(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -138,7 +165,7 @@ function EmptyRow({ text }) {
   return <p className="p-4 text-center text-sm text-navy-400">{text}</p>;
 }
 
-function HistoryRow({ title, subtitle, date, pdfUrl }) {
+function HistoryRow({ title, subtitle, date, pdfUrl, canEdit, onEdit }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-navy-50 px-4 py-3 last:border-0">
       <div className="min-w-0">
@@ -147,6 +174,15 @@ function HistoryRow({ title, subtitle, date, pdfUrl }) {
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span className="text-xs text-navy-400">{new Date(date).toLocaleDateString("en-GB")}</span>
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:underline"
+          >
+            Edit
+          </button>
+        ) : null}
         <ViewDocumentButton url={pdfUrl} title={title} label="Document" />
       </div>
     </div>

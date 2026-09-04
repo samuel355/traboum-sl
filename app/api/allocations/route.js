@@ -124,6 +124,10 @@ export async function POST(request) {
   });
 
   let pdfUrl = null;
+  await db
+    .from(ALLOCATIONS_TABLE)
+    .update({ reference_number: referenceNumber, file_number: fileNumber })
+    .eq("id", allocation.id);
   try {
     pdfUrl = await uploadToR2(pdfBuffer, allocationPdfKey(allocation.id), "application/pdf");
     await db.from(ALLOCATIONS_TABLE).update({ pdf_url: pdfUrl }).eq("id", allocation.id);

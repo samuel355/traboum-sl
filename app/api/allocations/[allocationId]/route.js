@@ -114,9 +114,11 @@ export async function PATCH(request, { params }) {
     pdfUrl = await uploadToR2(pdfBuffer, allocationPdfKey(allocation.id), "application/pdf");
     const { error: pdfUpdateError } = await db
       .from(ALLOCATIONS_TABLE)
-      .update({ pdf_url: pdfUrl })
+      .update({ reference_number: referenceNumber, file_number: fileNumber, pdf_url: pdfUrl })
       .eq("id", allocation.id);
     if (pdfUpdateError) throw pdfUpdateError;
+    allocation.reference_number = referenceNumber;
+    allocation.file_number = fileNumber;
     allocation.pdf_url = pdfUrl;
   } catch (pdfError) {
     console.error("Failed to refresh allocation PDF", allocation.id, pdfError);
