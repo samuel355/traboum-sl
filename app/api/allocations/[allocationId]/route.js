@@ -3,7 +3,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { can, getEffectiveRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATION_STAGES, ALLOCATIONS_TABLE, PLOT_TABLE } from "@/lib/plots";
-import { deleteFromR2ByUrl } from "@/lib/r2";
+import { allocationPdfKey, deleteFromR2ByUrl, uploadToR2 } from "@/lib/r2";
+import { generateAllocationPdf } from "@/lib/pdf";
 import { writeAuditLog } from "@/lib/audit";
 
 const STATUS_KEYS = ALLOCATION_STAGES.map((s) => s.key);
@@ -33,7 +34,7 @@ export async function PATCH(request, { params }) {
   if ("clientEmail" in body) updates.client_email = body.clientEmail || null;
   if ("clientPhone" in body) updates.client_phone = String(body.clientPhone ?? "").trim();
   if ("clientAddress" in body) updates.client_address = body.clientAddress || null;
-  if ("agent" in body) updates.agent = String(body.agent ?? "").trim();
+  if ("agent" in body) updates.agent = String(body.agent ?? "").trim() || null;
   if ("plotNumber" in body) updates.plot_number = body.plotNumber || null;
   if ("streetName" in body) updates.street_name = body.streetName || null;
   if ("amount" in body) {
@@ -83,6 +84,43 @@ export async function PATCH(request, { params }) {
   if (error || !allocation) {
     console.error("Failed to update allocation", params.allocationId, error);
     return NextResponse.json({ error: "Failed to update allocation" }, { status: 500 });
+  }
+
+  const allocationDate = allocation.created_at || new Date().toISOString();
+  const date = new Date(allocationDate);
+  const referenceNumber = `TSL-${String(allocation.id).slice(-8).toUpperCase()}`;
+  const fileNumber = `TSL-${String(allocation.plot_number || "PLOT")
+    .replace(/\s+/g, "")
+    .toUpperCase()}-${date.getFullYear()}`;
+  const pdfBuffer = await generateAllocationPdf({
+    allocationId: allocation.id,
+    referenceNumber,
+    fileNumber,
+    allocationDate,
+    plotNumber: allocation.plot_number,
+    streetName: allocation.street_name,
+    clientName: allocation.client_name,
+    clientEmail: allocation.client_email,
+    clientPhone: allocation.client_phone,
+    clientAddress: allocation.client_address,
+    agent: allocation.agent,
+    amount: allocation.amount,
+    date,
+    kind: "Allocation",
+  });
+
+  let pdfUrl = allocation.pdf_url;
+  try {
+    pdfUrl = await uploadToR2(pdfBuffer, allocationPdfKey(allocation.id), "application/pdf");
+    const { error: pdfUpdateError } = await db
+      .from(ALLOCATIONS_TABLE)
+      .update({ pdf_url: pdfUrl })
+      .eq("id", allocation.id);
+    if (pdfUpdateError) throw pdfUpdateError;
+    allocation.pdf_url = pdfUrl;
+  } catch (pdfError) {
+    console.error("Failed to refresh allocation PDF", allocation.id, pdfError);
+    return NextResponse.json({ error: "Allocation saved, but the document could not be refreshed" }, { status: 500 });
   }
 
   const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;

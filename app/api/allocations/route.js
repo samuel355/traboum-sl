@@ -150,7 +150,17 @@ export async function POST(request) {
     ["Processed by", agentName],
   ];
 
-  await Promise.allSettled([
+  await writeAuditLog({
+    actorId: user.id,
+    actorName: agentName,
+    actorRole: role,
+    action: "allocation.created",
+    entityType: ALLOCATIONS_TABLE,
+    entityId: allocation.id,
+    metadata: { plotId, plotNumber, streetName, clientName, clientPhone },
+  });
+
+  void Promise.allSettled([
     notifyEmails({
       subject: `Plot ${plotNumber} allocated — Trabuom Stool Lands`,
       templateData: {
@@ -167,16 +177,11 @@ export async function POST(request) {
     notifyPhones(
       `TSL: Plot ${plotNumber} has been allocated to ${clientName} by ${agentName}. — Trabuom Stool Lands`,
     ),
-    writeAuditLog({
-      actorId: user.id,
-      actorName: agentName,
-      actorRole: role,
-      action: "allocation.created",
-      entityType: ALLOCATIONS_TABLE,
-      entityId: allocation.id,
-      metadata: { plotId, plotNumber, streetName, clientName, clientPhone },
-    }),
-  ]);
+  ]).then((results) => {
+    results
+      .filter((result) => result.status === "rejected")
+      .forEach((result) => console.error("Allocation notification failed", result.reason));
+  });
 
   return NextResponse.json({ id: allocation.id, pdfUrl });
 }

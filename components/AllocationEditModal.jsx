@@ -102,8 +102,24 @@ export function AllocationEditModal({ allocation, onClose, onSaved }) {
             <textarea rows={2} className={FIELD_CLASS} value={form.clientAddress} onChange={update("clientAddress")} />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-navy-700">Agent</label>
-            <input className={FIELD_CLASS} value={form.agent} onChange={update("agent")} />
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="block text-sm font-medium text-navy-700">Agent</label>
+              {form.agent ? (
+                <button
+                  type="button"
+                  onClick={() => setForm((current) => ({ ...current, agent: "" }))}
+                  className="text-xs font-semibold text-navy-500 hover:text-navy-900"
+                >
+                  Remove agent
+                </button>
+              ) : null}
+            </div>
+            <input
+              className={FIELD_CLASS}
+              value={form.agent}
+              onChange={update("agent")}
+              placeholder="Optional"
+            />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Amount paid (GHS)</label>

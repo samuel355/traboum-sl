@@ -16,10 +16,15 @@ export function DocumentViewerModal({ url, title = "Document", onClose }) {
     if (!url) return;
 
     if (!image) {
-      // The PDF is already loaded in the visible iframe — print() on a
-      // cross-origin frame's contentWindow is allowed (it doesn't read any
-      // content back), and browsers route it to their native PDF renderer.
-      iframeRef.current?.contentWindow?.print();
+      // Browser PDF viewers do not consistently expose print() through an
+      // embedded cross-origin iframe, so open the file in a printable tab.
+      const printWindow = window.open(url, "_blank");
+      if (printWindow) {
+        printWindow.focus();
+        window.setTimeout(() => printWindow.print(), 800);
+      } else {
+        iframeRef.current?.contentWindow?.print();
+      }
       return;
     }
 
