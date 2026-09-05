@@ -74,6 +74,11 @@ export default async function OverviewPage() {
                       {ACTION_LABELS[entry.action] || entry.action}
                     </p>
                     <p className="truncate text-xs text-navy-400">{entry.actor_name || entry.actor_id}</p>
+                    {entry.metadata && Object.keys(entry.metadata).length ? (
+                      <p className="mt-1 truncate text-xs text-navy-500">
+                        {formatActivityDetails(entry.metadata)}
+                      </p>
+                    ) : null}
                   </div>
                   <span className="shrink-0 text-xs text-navy-400">
                     {formatAuditDate(entry.created_at)}
@@ -86,6 +91,21 @@ export default async function OverviewPage() {
       </div>
     </div>
   );
+}
+
+function formatActivityDetails(metadata) {
+  const labels = {
+    plotNumber: "Plot number",
+    streetName: "Street name",
+    clientName: "Client",
+    status: "Status",
+    owner: "Owner",
+  };
+
+  return Object.entries(metadata)
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .map(([key, value]) => `${labels[key] || key}: ${String(value)}`)
+    .join(" · ");
 }
 
 function StatCard({ icon: Icon, label, value, tone = "text-navy-900", iconTone = "bg-navy-50 text-navy-700" }) {
