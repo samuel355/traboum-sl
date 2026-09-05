@@ -16,18 +16,22 @@ export default async function NewTransferPage({ searchParams }) {
     role === ROLES.SYSADMIN ? allPlots : allPlots.filter((plot) => plotOwner(plot) === "tsl");
   const soldPlots = manageablePlots
     .filter((plot) => statusKey(plotStatus(plot)) === "sold")
-    .map((plot) => ({ id: plot.id, plotNumber: plotNumber(plot), streetName: streetName(plot) }));
+    .map((plot) => ({
+      id: plot.id,
+      plotNumber: plotNumber(plot),
+      streetName: streetName(plot),
+      currentClientName: plot.currentClientName,
+      geometry: plot.geometry,
+    }));
 
   return (
-    <div className="max-w-2xl mx-auto p-6 md:p-10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Transfer of Allocation</p>
-      <h1 className="mt-1 text-2xl font-bold text-navy-900">Record a transfer</h1>
-      <p className="mt-1 text-sm text-navy-500">
-        Upload the old allocation document, enter the new client&apos;s details and the payment
-        taken, and a new allocation document will be generated.
-      </p>
-
-      <div className="mt-8">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 md:p-10">
+      <div className="rounded-2xl bg-navy-900 p-5 text-white shadow-panel sm:p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Transfer of Allocation</p>
+        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Move an allocation safely</h1>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-navy-200">Choose the sold plot, add the new allottee, and finish with the transfer payment and old document.</p>
+      </div>
+      <div className="mt-6">
         <TransferForm
           plots={soldPlots}
           preselectedPlotId={searchParams?.plotId}

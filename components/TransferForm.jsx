@@ -2,48 +2,42 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Loader2, Upload } from "lucide-react";
+import { TransferPlotPicker } from "./TransferPlotPicker";
 import { ViewDocumentButton } from "./ViewDocumentButton";
 
-const FIELD_CLASS =
-  "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
-const OTHER = "__other__";
+const FIELD_CLASS = "w-full rounded-xl border border-navy-100 px-3.5 py-3 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
+const STEPS = ["Choose plot", "New allottee", "Payment & document"];
 
 export function TransferForm({ plots, defaultFee, preselectedPlotId }) {
   const router = useRouter();
-  const [plotChoice, setPlotChoice] = useState(() => {
-    if (preselectedPlotId && plots.some((p) => p.id === preselectedPlotId)) return preselectedPlotId;
-    return plots[0]?.id ?? OTHER;
-  });
-  const [manualPlot, setManualPlot] = useState({ number: "", street: "" });
+  const initialPlot = preselectedPlotId && plots.some((plot) => String(plot.id) === String(preselectedPlotId)) ? String(preselectedPlotId) : "";
+  const [step, setStep] = useState(initialPlot ? 2 : 1);
+  const [plotId, setPlotId] = useState(initialPlot);
   const [file, setFile] = useState(null);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    amount: defaultFee,
-    method: "cash",
-    reference: "",
-  });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", amount: defaultFee, method: "cash", reference: "" });
   const [state, setState] = useState("idle");
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const selectedPlot = plots.find((plot) => String(plot.id) === String(plotId));
+  const update = (field) => (e) => setForm((current) => ({ ...current, [field]: e.target.value }));
 
-  const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
-
-  const selectedPlot = plots.find((p) => p.id === plotChoice);
-  const isOther = plotChoice === OTHER || !selectedPlot;
+  function next() {
+    setError(null);
+    if (step === 1 && !plotId) return setError("Choose a sold plot before continuing.");
+    if (step === 2 && (!form.name.trim() || !form.phone.trim())) return setError("New allottee name and phone are required.");
+    setStep((current) => Math.min(3, current + 1));
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (!file) return setError("Upload the old allocation document before submitting.");
     setState("submitting");
     setError(null);
-
     const fd = new FormData();
-    fd.set("plotId", isOther ? `manual-${manualPlot.number}` : selectedPlot.id);
-    fd.set("plotNumber", isOther ? manualPlot.number : selectedPlot.plotNumber);
-    fd.set("streetName", isOther ? manualPlot.street : selectedPlot.streetName || "");
+    fd.set("plotId", selectedPlot.id);
+    fd.set("plotNumber", selectedPlot.plotNumber || "");
+    fd.set("streetName", selectedPlot.streetName || "");
     fd.set("newClientName", form.name);
     fd.set("newClientEmail", form.email);
     fd.set("newClientPhone", form.phone);
@@ -51,8 +45,7 @@ export function TransferForm({ plots, defaultFee, preselectedPlotId }) {
     fd.set("paymentAmount", form.amount);
     fd.set("paymentMethod", form.method);
     fd.set("paymentReference", form.reference);
-    if (file) fd.set("oldAllocationFile", file);
-
+    fd.set("oldAllocationFile", file);
     try {
       const res = await fetch("/api/transfers", { method: "POST", body: fd });
       const data = await res.json();
@@ -65,168 +58,30 @@ export function TransferForm({ plots, defaultFee, preselectedPlotId }) {
     }
   }
 
-  if (state === "done" && result) {
-    return (
-      <div className="rounded-xl border border-green-100 bg-green-50 p-6 text-center">
-        <CheckCircle2 className="mx-auto h-9 w-9 text-green-600" />
-        <h2 className="mt-3 text-base font-bold text-navy-900">Transfer recorded</h2>
-        <p className="mt-1 text-sm text-navy-500">
-          The allocation has been transferred to {form.name}. Notifications have been sent.
-        </p>
-        <div className="mt-5 flex justify-center gap-3">
-          {result.pdfUrl ? (
-            <ViewDocumentButton
-              url={result.pdfUrl}
-              title="Transfer document"
-              label="View new document"
-              icon={() => null}
-              className="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800"
-            />
-          ) : null}
-          <button
-            onClick={() => router.push("/dashboard/transfers")}
-            className="rounded-lg border border-navy-200 px-4 py-2 text-sm font-semibold text-navy-700 hover:bg-navy-50"
-          >
-            Back to transfers
-          </button>
-        </div>
+  if (state === "done" && result) return (
+    <div className="rounded-2xl border border-green-100 bg-green-50 p-8 text-center">
+      <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+      <h2 className="mt-3 text-lg font-bold text-navy-900">Transfer recorded</h2>
+      <p className="mx-auto mt-1 max-w-md text-sm text-navy-500">The allocation is now recorded under {form.name}. Notifications have been sent.</p>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {result.pdfUrl ? <ViewDocumentButton url={result.pdfUrl} title="Transfer document" label="View new document" icon={() => null} className="rounded-xl bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800" /> : null}
+        <button onClick={() => router.push("/dashboard/transfers")} className="rounded-xl border border-navy-200 px-4 py-2.5 text-sm font-semibold text-navy-700 hover:bg-white">Back to transfers</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <section>
-        <label className="mb-1.5 block text-sm font-medium text-navy-700">Plot being transferred</label>
-        <select
-          className={FIELD_CLASS}
-          value={plotChoice}
-          onChange={(e) => setPlotChoice(e.target.value)}
-        >
-          {plots.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.plotNumber} {p.streetName ? `— ${p.streetName}` : ""}
-            </option>
-          ))}
-          <option value={OTHER}>Other / not in system (enter manually)</option>
-        </select>
-
-        {isOther ? (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <input
-              placeholder="Plot number"
-              required
-              className={FIELD_CLASS}
-              value={manualPlot.number}
-              onChange={(e) => setManualPlot((m) => ({ ...m, number: e.target.value }))}
-            />
-            <input
-              placeholder="Street"
-              className={FIELD_CLASS}
-              value={manualPlot.street}
-              onChange={(e) => setManualPlot((m) => ({ ...m, street: e.target.value }))}
-            />
-          </div>
-        ) : null}
-      </section>
-
-      <section>
-        <label className="mb-1.5 block text-sm font-medium text-navy-700">
-          Old allocation document
-        </label>
-        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-navy-200 px-4 py-4 text-sm text-navy-500 hover:border-navy-400">
-          <Upload className="h-4 w-4 shrink-0" />
-          {file ? file.name : "Upload a photo or PDF of the existing allocation"}
-          <input
-            type="file"
-            accept="application/pdf,image/*"
-            required
-            className="hidden"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-      </section>
-
-      <section className="space-y-4">
-        <p className="text-sm font-medium text-navy-700">New client details</p>
-        <input
-          placeholder="Full name"
-          required
-          className={FIELD_CLASS}
-          value={form.name}
-          onChange={update("name")}
-        />
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className={FIELD_CLASS}
-            value={form.email}
-            onChange={update("email")}
-          />
-          <input
-            placeholder="Phone number"
-            required
-            className={FIELD_CLASS}
-            value={form.phone}
-            onChange={update("phone")}
-          />
-        </div>
-        <textarea
-          rows={3}
-          placeholder="Address"
-          className={FIELD_CLASS}
-          value={form.address}
-          onChange={update("address")}
-        />
-      </section>
-
-      <section className="space-y-4 rounded-lg bg-navy-50 p-4">
-        <p className="text-sm font-medium text-navy-700">Payment</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-1.5 block text-xs text-navy-500">Amount (GHS)</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              required
-              className={FIELD_CLASS}
-              value={form.amount}
-              onChange={update("amount")}
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs text-navy-500">Method</label>
-            <select className={FIELD_CLASS} value={form.method} onChange={update("method")}>
-              <option value="cash">Cash</option>
-              <option value="mobile_money">Mobile Money</option>
-              <option value="bank">Bank transfer</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs text-navy-500">Reference (optional)</label>
-          <input
-            placeholder="Transaction ID, receipt no., etc."
-            className={FIELD_CLASS}
-            value={form.reference}
-            onChange={update("reference")}
-          />
-        </div>
-      </section>
-
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-      <button
-        type="submit"
-        disabled={state === "submitting"}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-white hover:bg-navy-800 disabled:opacity-60"
-      >
-        {state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Record transfer & generate document
-      </button>
+    <form onSubmit={onSubmit} className="overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm">
+      <div className="grid grid-cols-3 border-b border-navy-100 bg-navy-50/60">
+        {STEPS.map((label, index) => { const number = index + 1; return <div key={label} className={`border-b-2 px-3 py-4 text-center text-xs font-semibold sm:px-5 ${step === number ? "border-amber-500 text-navy-900" : step > number ? "border-green-500 text-green-700" : "border-transparent text-navy-400"}`}><span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-current/10">{step > number ? "✓" : number}</span>{label}</div>; })}
+      </div>
+      <div className="p-4 sm:p-6">
+        {step === 1 ? <TransferPlotPicker plots={plots} value={plotId} onChange={setPlotId} /> : null}
+        {step === 2 ? <section className="space-y-4"><div><p className="text-sm font-bold text-navy-900">New allottee details</p><p className="mt-1 text-xs text-navy-500">These details will appear on the new transfer document.</p></div><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Full name</label><input required className={FIELD_CLASS} value={form.name} onChange={update("name")} /></div><div className="grid gap-4 sm:grid-cols-2"><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Phone number</label><input required className={FIELD_CLASS} value={form.phone} onChange={update("phone")} /></div><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Email</label><input type="email" className={FIELD_CLASS} value={form.email} onChange={update("email")} /></div></div><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Address</label><textarea rows={4} className={FIELD_CLASS} value={form.address} onChange={update("address")} /></div></section> : null}
+        {step === 3 ? <section className="space-y-5"><div><p className="text-sm font-bold text-navy-900">Payment & old document</p><p className="mt-1 text-xs text-navy-500">Attach the previous allocation and record the transfer payment.</p></div><label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-navy-200 bg-navy-50/40 p-5 text-sm text-navy-600 hover:border-navy-400"><FileText className="h-5 w-5 text-navy-400" /><span className="min-w-0 flex-1 truncate">{file ? file.name : "Upload old allocation document (PDF or image)"}</span><Upload className="h-4 w-4" /><input type="file" accept="application/pdf,image/*" required className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label><div className="grid gap-4 sm:grid-cols-2"><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Amount paid (GHS)</label><input type="number" min="0" step="0.01" required className={FIELD_CLASS} value={form.amount} onChange={update("amount")} /></div><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Payment method</label><select className={FIELD_CLASS} value={form.method} onChange={update("method")}><option value="cash">Cash</option><option value="mobile_money">Mobile Money</option><option value="bank">Bank transfer</option><option value="other">Other</option></select></div></div><div><label className="mb-1.5 block text-sm font-medium text-navy-700">Reference (optional)</label><input className={FIELD_CLASS} placeholder="Transaction ID or receipt number" value={form.reference} onChange={update("reference")} /></div></section> : null}
+        {error ? <p className="mt-5 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-600">{error}</p> : null}
+        <div className="mt-6 flex gap-3"><button type="button" onClick={() => setStep((current) => Math.max(1, current - 1))} disabled={step === 1 || state === "submitting"} className="inline-flex items-center gap-2 rounded-xl border border-navy-200 px-4 py-3 text-sm font-semibold text-navy-700 hover:bg-navy-50 disabled:invisible"><ArrowLeft className="h-4 w-4" /> Back</button>{step < 3 ? <button type="button" onClick={next} className="ml-auto inline-flex items-center gap-2 rounded-xl bg-navy-900 px-5 py-3 text-sm font-semibold text-white hover:bg-navy-800">Continue <ArrowRight className="h-4 w-4" /></button> : <button type="submit" disabled={state === "submitting"} className="ml-auto inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-navy-950 hover:bg-amber-300 disabled:opacity-60">{state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Record transfer</button>}</div>
+      </div>
     </form>
   );
 }

@@ -7,7 +7,7 @@ import { ViewDocumentButton } from "./ViewDocumentButton";
 import { ClientPhotoField } from "./ClientPhotoField";
 
 const FIELD_CLASS =
-  "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
+  "w-full rounded-xl border border-navy-100 px-3.5 py-3 text-sm text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 
 export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
   const router = useRouter();
@@ -82,7 +82,7 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <div className="grid grid-cols-2 gap-4 rounded-lg bg-navy-50 p-4 text-sm">
+      <div className="grid grid-cols-2 gap-4 rounded-2xl border border-navy-100 bg-navy-50/70 p-4 text-sm">
         <div>
           <p className="text-navy-400 text-xs">Plot number</p>
           <p className="font-semibold text-navy-900">{plotNumber}</p>
@@ -91,54 +91,47 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
           <p className="text-navy-400 text-xs">Street</p>
           <p className="font-semibold text-navy-900">{streetName || "—"}</p>
         </div>
-        <div className="col-span-2">
+        <div className="col-span-2 border-t border-navy-100 pt-3">
           <p className="text-navy-400 text-xs">Agent</p>
           <p className="font-semibold text-navy-900">{agentName}</p>
         </div>
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-navy-700">Client full name</label>
-        <input required className={FIELD_CLASS} value={form.name} onChange={update("name")} />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+      <section className="rounded-2xl border border-navy-100 p-4 sm:p-5">
+        <p className="mb-4 text-sm font-bold text-navy-900">Client details</p>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-navy-700">Email</label>
-          <input type="email" className={FIELD_CLASS} value={form.email} onChange={update("email")} />
+          <label className="mb-1.5 block text-sm font-medium text-navy-700">Client full name</label>
+          <input required className={FIELD_CLASS} value={form.name} onChange={update("name")} />
         </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-navy-700">Phone number</label>
-          <input required className={FIELD_CLASS} value={form.phone} onChange={update("phone")} />
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-navy-700">Email</label>
+            <input type="email" className={FIELD_CLASS} value={form.email} onChange={update("email")} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-navy-700">Phone number</label>
+            <input required className={FIELD_CLASS} value={form.phone} onChange={update("phone")} />
+          </div>
         </div>
-      </div>
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-navy-700">Address</label>
-        <textarea rows={3} className={FIELD_CLASS} value={form.address} onChange={update("address")} />
-      </div>
-      <ClientPhotoField file={clientPhoto} onChange={setClientPhoto} />
-      <div>
+        <div className="mt-4">
+          <label className="mb-1.5 block text-sm font-medium text-navy-700">Address</label>
+          <textarea rows={3} className={FIELD_CLASS} value={form.address} onChange={update("address")} />
+        </div>
+        <div className="mt-4"><ClientPhotoField file={clientPhoto} onChange={setClientPhoto} /></div>
+      </section>
+      <section className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-5">
+        <p className="mb-4 text-sm font-bold text-navy-900">Payment</p>
         <label className="mb-1.5 block text-sm font-medium text-navy-700">Amount paid (GHS)</label>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          required
-          className={FIELD_CLASS}
-          value={form.amount}
-          onChange={update("amount")}
-        />
-        <p className="mt-1.5 text-xs text-navy-400">
-          Buying a plot is recorded as paid in full — for a part-payment plan, use Reserve plot
-          instead.
-        </p>
-      </div>
+        <input type="number" min="0" step="0.01" required className={FIELD_CLASS} value={form.amount} onChange={update("amount")} />
+        <p className="mt-1.5 text-xs text-navy-400">Buying a plot is recorded as paid in full — for a part-payment plan, use Reserve plot instead.</p>
+      </section>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <button
         type="submit"
         disabled={state === "submitting"}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-white hover:bg-navy-800 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3.5 text-sm font-bold text-navy-950 shadow-sm hover:bg-amber-300 disabled:opacity-60"
       >
         {state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Generate allocation document

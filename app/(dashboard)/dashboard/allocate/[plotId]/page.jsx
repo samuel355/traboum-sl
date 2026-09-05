@@ -29,18 +29,18 @@ export default async function AllocatePlotPage({ params }) {
   const agentName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 md:p-10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">New Allocation</p>
-      <h1 className="mt-1 text-2xl font-bold text-navy-900">
-        Plot {plotNumber(plot)}
-        {streetName(plot) ? ` — ${streetName(plot)}` : ""}
-      </h1>
-      <p className="mt-1 text-sm text-navy-500">
-        Fill in the client&apos;s details below. An allocation document will be generated and
-        emailed/texted to the queen, chief, and surveyor once submitted.
-      </p>
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 md:p-10">
+      <div className="rounded-2xl bg-navy-900 p-5 text-white shadow-panel sm:p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Buy plot</p>
+        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">
+          Allocate Plot {plotNumber(plot) || "—"}
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-navy-200">
+          {streetName(plot) || "Street not set"} · Complete the client details and payment to generate the official allocation document.
+        </p>
+      </div>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <AllocationForm
           plotId={plot.id}
           plotNumber={plotNumber(plot)}

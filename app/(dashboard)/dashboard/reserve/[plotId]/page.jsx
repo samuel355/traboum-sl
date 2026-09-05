@@ -25,17 +25,18 @@ export default async function ReservePlotPage({ params }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 md:p-10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Reserve Plot</p>
-      <h1 className="mt-1 text-2xl font-bold text-navy-900">
-        Plot {plotNumber(plot)}
-        {streetName(plot) ? ` — ${streetName(plot)}` : ""}
-      </h1>
-      <p className="mt-1 text-sm text-navy-500">
-        Hold this plot for a client without recording a sale. It can be allocated properly later.
-      </p>
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 md:p-10">
+      <div className="rounded-2xl bg-navy-900 p-5 text-white shadow-panel sm:p-7">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Reserve plot</p>
+        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">
+          Hold Plot {plotNumber(plot) || "—"}
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-navy-200">
+          {streetName(plot) || "Street not set"} · Secure the plot for a client while payment is completed.
+        </p>
+      </div>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <ReserveForm plotId={plot.id} plotNumber={plotNumber(plot)} streetName={streetName(plot)} />
       </div>
     </div>
