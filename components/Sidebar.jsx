@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { roleLabel } from "@/lib/roles";
 import { SignOutAuditButton } from "./SignOutAuditButton";
+import { BrandMark } from "./BrandMark";
 
 const NAV = [
   { href: "/dashboard/overview", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -33,11 +34,9 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-navy-900">
       <div className="flex items-center gap-2.5 px-6 py-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-sm font-bold text-navy-950 shadow-sm">
-          TSL
-        </div>
+        <BrandMark size={40} className="rounded-xl" />
         <div>
-          <p className="text-sm font-bold text-white leading-tight">Trabuom Stool Lands</p>
+          <p className="text-sm font-bold leading-tight text-amber-300">Trabuom Stool Lands</p>
           <p className="text-[11px] text-navy-300">Land management</p>
         </div>
       </div>

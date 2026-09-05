@@ -5,6 +5,11 @@ import "./globals.css";
 export const metadata = {
   title: "Trabuom Stool Lands",
   description: "Land management for Trabuom Stool Lands",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {

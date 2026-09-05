@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { BrandMark } from "./BrandMark";
 
 const NAV = [
   { href: "/dashboard/overview", label: "Dashboard", exact: true },
@@ -27,8 +28,8 @@ export function MobileNav({ showUsers, showSettings }) {
     <div className="fixed inset-x-0 top-0 z-30 bg-navy-900 shadow-lg md:hidden">
       <div className="flex h-14 items-center justify-between px-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="shrink-0 text-sm font-bold text-white">TSL</span>
-          <span className="truncate text-xs font-medium text-navy-200">{activeItem?.label || "Menu"}</span>
+          <BrandMark size={34} className="rounded-xl" />
+          <span className="truncate text-xs font-semibold text-amber-200">{activeItem?.label || "Menu"}</span>
         </div>
         <button
           type="button"

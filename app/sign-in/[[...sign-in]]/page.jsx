@@ -1,5 +1,6 @@
 import { ShieldCheck, MapPinned, ScrollText } from "lucide-react";
 import { SignInLauncher } from "@/components/SignInLauncher";
+import { BrandMark } from "@/components/BrandMark";
 
 const FEATURES = [
   { icon: MapPinned, text: "Live map of every stool-land plot and its status" },
@@ -10,22 +11,6 @@ const FEATURES = [
 // A simplified silhouette of a traditional Akan stool — seat, flared legs,
 // base — rendered in gold on navy to nod at "stool lands" (land held by a
 // traditional authority) rather than a generic placemark/building icon.
-function StoolMark({ size = 40, className = "" }) {
-  return (
-    <div
-      className={`flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-b from-navy-800 to-navy-950 ring-1 ring-inset ring-amber-400/25 ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <svg viewBox="0 0 40 40" width={size * 0.6} height={size * 0.6} fill="#D9A441">
-        <rect x="5" y="7" width="30" height="7" rx="3.5" />
-        <polygon points="13,14 19,14 16,31 8,31" />
-        <polygon points="21,14 27,14 32,31 24,31" />
-        <rect x="5" y="31" width="30" height="4" rx="2" />
-      </svg>
-    </div>
-  );
-}
-
 export default function SignInPage() {
   return (
     <div className="min-h-screen bg-navy-900 flex">
@@ -48,7 +33,7 @@ export default function SignInPage() {
 
         <div className="relative">
           <div className="flex items-center gap-3">
-            <StoolMark size={48} />
+            <BrandMark size={48} />
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-white">
                 Trabuom Stool Lands
@@ -79,7 +64,7 @@ export default function SignInPage() {
         </ul>
 
         <div className="relative flex items-center gap-2.5">
-          <StoolMark size={26} />
+          <BrandMark size={26} />
           <p className="text-xs text-navy-300">
             © {new Date().getFullYear()} Trabuom Stool Lands Secretariat
           </p>
@@ -93,7 +78,7 @@ export default function SignInPage() {
 
         <div className="relative w-full max-w-md rounded-2xl border border-navy-100 bg-white p-8 shadow-panel md:p-10">
           <div className="mb-8 flex flex-col items-center text-center lg:items-start lg:text-left">
-            <StoolMark size={44} />
+            <BrandMark size={44} />
             <h1 className="mt-4 text-2xl font-bold text-navy-900 lg:hidden">Trabuom Stool Lands</h1>
             <h2 className="mt-4 hidden text-2xl font-bold text-navy-900 lg:block">Sign in</h2>
             <p className="mt-1.5 text-sm text-navy-500">Continue to your Trabuom Stool Lands account.</p>
