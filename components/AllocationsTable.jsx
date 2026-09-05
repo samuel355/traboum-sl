@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Search, Trash2 } from "lucide-react";
-import { ALLOCATION_STATUS_STYLE, allocationStatusLabel } from "@/lib/plots";
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, FileText, FileSpreadsheet, Loader2, Pencil, Printer, Search, Trash2 } from "lucide-react";
+import { ALLOCATION_STAGES, ALLOCATION_STATUS_STYLE, allocationStatusLabel } from "@/lib/plots";
 import { ViewDocumentButton } from "./ViewDocumentButton";
 import { AllocationEditModal } from "./AllocationEditModal";
 
@@ -15,6 +15,17 @@ const NEXT_STATUS = {
   ready_to_collect: { value: "collected", label: "Mark collected" },
 };
 
+function referenceNumber(row) {
+  return row.reference_number || (row.id ? `TSL-${String(row.id).slice(-8).toUpperCase()}` : "—");
+}
+
+function fileNumber(row) {
+  if (row.file_number) return row.file_number;
+  const plot = String(row.plot_number || "PLOT").replace(/\s+/g, "").toUpperCase();
+  const year = row.created_at ? new Date(row.created_at).getFullYear() : null;
+  return year ? `TSL-${plot}-${year}` : "—";
+}
+
 function StatusBadge({ status }) {
   const tone = ALLOCATION_STATUS_STYLE[status] || ALLOCATION_STATUS_STYLE.pending;
   return (
@@ -24,9 +35,40 @@ function StatusBadge({ status }) {
   );
 }
 
+function SortButton({ label, onClick, active, direction }) {
+  const Icon = active ? (direction === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 font-inherit text-left hover:text-navy-900">
+      {label}
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export function AllocationsTable({ allocations, canManage, canDelete }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sort, setSort] = useState({ key: "created_at", direction: "desc" });
   const [editingAllocation, setEditingAllocation] = useState(null);
   const [deletingAllocation, setDeletingAllocation] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
@@ -36,21 +78,76 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return allocations;
-    return allocations.filter((row) =>
+    const rows = !q ? allocations : allocations.filter((row) =>
       [
         row.plot_number,
         row.street_name,
         row.client_name,
         row.client_phone,
         row.agent,
-        row.reference_number,
-        row.file_number,
+        referenceNumber(row),
+        fileNumber(row),
       ]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q)),
     );
-  }, [allocations, query]);
+    return rows
+      .filter((row) => !statusFilter || row.status === statusFilter)
+      .sort((a, b) => {
+        const value = (row) => {
+          if (sort.key === "reference") return referenceNumber(row);
+          if (sort.key === "file") return fileNumber(row);
+          return row[sort.key] ?? "";
+        };
+        const left = String(value(a)).toLowerCase();
+        const right = String(value(b)).toLowerCase();
+        const result = left.localeCompare(right, undefined, { numeric: true });
+        return sort.direction === "asc" ? result : -result;
+      });
+  }, [allocations, query, statusFilter, sort]);
+
+  function toggleSort(key) {
+    setSort((current) => ({
+      key,
+      direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  }
+
+  function exportRows(format) {
+    const columns = [
+      ["Plot number", (row) => row.plot_number || ""],
+      ["Street name", (row) => row.street_name || ""],
+      ["Reference number", referenceNumber],
+      ["File number", fileNumber],
+      ["Client", (row) => row.client_name || ""],
+      ["Phone", (row) => row.client_phone || ""],
+      ["Agent", (row) => row.agent || ""],
+      ["Date", (row) => (row.created_at ? new Date(row.created_at).toLocaleDateString("en-GB") : "")],
+      ["Status", (row) => allocationStatusLabel(row.status)],
+    ];
+    if (format === "csv") {
+      const escape = (value) => `"${String(value).replaceAll('"', '""')}"`;
+      const csv = [columns.map(([label]) => escape(label)), ...filtered.map((row) => columns.map(([, get]) => escape(get(row))))]
+        .map((line) => line.join(","))
+        .join("\n");
+      downloadBlob(`trabuom-allocations-${new Date().toISOString().slice(0, 10)}.csv`, csv, "text/csv;charset=utf-8");
+      return;
+    }
+    const table = `<table><thead><tr>${columns.map(([label]) => `<th>${label}</th>`).join("")}</tr></thead><tbody>${filtered
+      .map((row) => `<tr>${columns.map(([, get]) => `<td>${escapeHtml(get(row))}</td>`).join("")}</tr>`)
+      .join("")}</tbody></table>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Trabuom Allocations</title><style>body{font-family:Arial,sans-serif;color:#0b0e2d;padding:28px}h1{font-size:20px}p{color:#64748b;font-size:12px}table{border-collapse:collapse;width:100%;font-size:10px}th{background:#0b0e2d;color:#fff;text-align:left}th,td{border:1px solid #d6daec;padding:7px}tr:nth-child(even){background:#f7f8fb}</style></head><body><h1>Trabuom Stool Lands — Allocations</h1><p>Exported ${new Date().toLocaleString("en-GB")} · ${filtered.length} record${filtered.length === 1 ? "" : "s"}</p>${table}</body></html>`;
+    if (format === "word") {
+      downloadBlob(`trabuom-allocations-${new Date().toISOString().slice(0, 10)}.doc`, html, "application/msword");
+    } else {
+      const printWindow = window.open("", "_blank", "noopener,noreferrer");
+      if (!printWindow) return;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    }
+  }
 
   function handleSaved() {
     setEditingAllocation(null);
@@ -94,19 +191,30 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
 
   return (
     <div>
-      <div className="relative w-full sm:max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by plot, client, reference, or file number"
-          className="w-full rounded-lg border border-navy-100 py-2.5 pl-9 pr-3.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
-        />
+      <div className="rounded-2xl border border-navy-100 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search plot, client, reference, or file number" className="w-full rounded-xl border border-navy-100 py-3 pl-9 pr-3.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15" />
+          </div>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-navy-100 bg-white px-3 py-3 text-sm text-navy-700 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15">
+            <option value="">All statuses</option>
+            {ALLOCATION_STAGES.map((stage) => <option key={stage.key} value={stage.key}>{stage.label}</option>)}
+          </select>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => exportRows("csv")} className="inline-flex items-center gap-1.5 rounded-xl border border-navy-200 px-3 py-2.5 text-xs font-semibold text-navy-700 hover:bg-navy-50"><FileSpreadsheet className="h-4 w-4 text-green-700" /> CSV</button>
+            <button type="button" onClick={() => exportRows("word")} className="inline-flex items-center gap-1.5 rounded-xl border border-navy-200 px-3 py-2.5 text-xs font-semibold text-navy-700 hover:bg-navy-50"><FileText className="h-4 w-4 text-blue-700" /> Word</button>
+            <button type="button" onClick={() => exportRows("pdf")} className="inline-flex items-center gap-1.5 rounded-xl bg-navy-900 px-3 py-2.5 text-xs font-semibold text-white hover:bg-navy-800"><Printer className="h-4 w-4 text-amber-300" /> PDF</button>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-navy-400">
+          <Download className="h-3.5 w-3.5" /> Exports use the current search, status filter, and sort order.
+        </div>
       </div>
 
       <p className="mt-3 text-xs text-navy-400">
-        {query
-          ? `Showing ${filtered.length} of ${allocations.length} allocations matching "${query}"`
+        {query || statusFilter
+          ? `Showing ${filtered.length} of ${allocations.length} filtered allocations`
           : `${allocations.length} allocation${allocations.length === 1 ? "" : "s"}`}
       </p>
 
@@ -124,12 +232,12 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
             <table className="hidden w-full text-sm md:table">
             <thead>
               <tr className="border-b border-navy-100 bg-navy-50 text-left text-xs uppercase tracking-wide text-navy-400">
-                <th className="px-4 py-3">Plot</th>
-                <th className="px-4 py-3">Reference / file</th>
-                <th className="px-4 py-3">Client</th>
+                <th className="px-4 py-3"><SortButton label="Plot" onClick={() => toggleSort("plot_number")} active={sort.key === "plot_number"} direction={sort.direction} /></th>
+                <th className="px-4 py-3"><SortButton label="Reference / file" onClick={() => toggleSort("reference")} active={sort.key === "reference"} direction={sort.direction} /></th>
+                <th className="px-4 py-3"><SortButton label="Client" onClick={() => toggleSort("client_name")} active={sort.key === "client_name"} direction={sort.direction} /></th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Agent</th>
-                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3"><SortButton label="Date" onClick={() => toggleSort("created_at")} active={sort.key === "created_at"} direction={sort.direction} /></th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Document</th>
                 <th className="px-4 py-3 text-right">Actions</th>
@@ -145,8 +253,8 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-navy-500">
-                    <span className="block font-medium text-navy-700">{row.reference_number || "—"}</span>
-                    <span className="block text-xs text-navy-400">{row.file_number || "—"}</span>
+                    <span className="block font-medium text-navy-700">{referenceNumber(row)}</span>
+                    <span className="block text-xs text-navy-400">{fileNumber(row)}</span>
                   </td>
                   <td className="px-4 py-3 text-navy-700">{row.client_name}</td>
                   <td className="px-4 py-3 text-navy-500">{row.client_phone}</td>
@@ -212,7 +320,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                 <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                   <div><p className="text-navy-400">Client</p><p className="mt-0.5 truncate font-semibold text-navy-700">{row.client_name}</p></div>
                   <div><p className="text-navy-400">Phone</p><p className="mt-0.5 truncate text-navy-600">{row.client_phone}</p></div>
-                  <div><p className="text-navy-400">Reference</p><p className="mt-0.5 truncate text-navy-600">{row.reference_number || "—"}</p></div>
+                  <div><p className="text-navy-400">Reference</p><p className="mt-0.5 truncate text-navy-600">{referenceNumber(row)}</p></div>
                   <div><p className="text-navy-400">Date</p><p className="mt-0.5 text-navy-600">{new Date(row.created_at).toLocaleDateString("en-GB")}</p></div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-navy-50 pt-3">
