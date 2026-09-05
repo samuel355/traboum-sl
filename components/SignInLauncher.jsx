@@ -1,7 +1,8 @@
 "use client";
 
-import { useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Clerk's inline <SignIn /> widget renders its own (largely unstyleable)
 // buttons/inputs/dividers — no amount of `appearance` overrides made that
@@ -24,11 +25,23 @@ const MODAL_APPEARANCE = {
 
 export function SignInLauncher() {
   const { openSignIn } = useClerk();
+  const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
+
+  function handleClick() {
+    if (!isLoaded) return;
+    if (isSignedIn) {
+      router.push("/dashboard");
+      return;
+    }
+    openSignIn({ appearance: MODAL_APPEARANCE, fallbackRedirectUrl: "/dashboard" });
+  }
 
   return (
     <button
       type="button"
-      onClick={() => openSignIn({ appearance: MODAL_APPEARANCE, fallbackRedirectUrl: "/dashboard" })}
+      onClick={handleClick}
+      disabled={!isLoaded}
       className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-white hover:bg-navy-800"
     >
       Sign in

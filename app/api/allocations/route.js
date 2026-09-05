@@ -207,6 +207,10 @@ export async function POST(request) {
     }),
     notifyPhones(
       `TSL: Plot ${plotNumber} has been allocated to ${clientName} by ${agentName}. --Trabuom Stool Lands`,
+      [clientPhone],
+      {
+        [clientPhone]: `Trabuom Stool Lands: Your allocation for Plot ${plotNumber}${streetName ? ` on ${streetName}` : ""} has been recorded successfully. --Trabuom Stool Lands`,
+      },
     ),
   ]).then((results) => {
     results

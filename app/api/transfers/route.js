@@ -159,6 +159,10 @@ export async function POST(request) {
     }),
     notifyPhones(
       `TSL: Plot ${plotNumber} allocation transferred to ${newClientName} by ${recordedByName}. --Trabuom Stool Lands`,
+      [newClientPhone],
+      {
+        [newClientPhone]: `Trabuom Stool Lands: The transfer of Plot ${plotNumber}${streetName ? ` on ${streetName}` : ""} to your name has been recorded successfully. --Trabuom Stool Lands`,
+      },
     ),
     writeAuditLog({
       actorId: user.id,
