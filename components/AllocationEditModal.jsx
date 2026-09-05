@@ -60,7 +60,7 @@ export function AllocationEditModal({ allocation, onClose, onSaved }) {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Edit Allocation</p>
             <h2 className="mt-0.5 text-lg font-bold text-navy-900">
-              Plot {allocation.plot_number || allocation.plot_id}
+              Plot {allocation.plot_number || ""}
             </h2>
           </div>
           <button

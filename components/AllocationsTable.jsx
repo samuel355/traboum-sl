@@ -217,7 +217,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-panel" onClick={(e) => e.stopPropagation()}>
             <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Delete Allocation</p>
             <h2 className="mt-0.5 text-lg font-bold text-navy-900">
-              Plot {deletingAllocation.plot_number || deletingAllocation.plot_id}
+              Plot {deletingAllocation.plot_number || ""}
             </h2>
             <p className="mt-2 text-sm text-navy-500">
               This can&apos;t be undone. The plot will be set back to Available and the allocation
