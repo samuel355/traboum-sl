@@ -30,7 +30,7 @@ export async function POST(request) {
   const paymentReference = form.get("paymentReference");
   const oldFile = form.get("oldAllocationFile");
 
-  if (!plotId || !newClientName || !newClientPhone || !paymentAmount || !oldFile) {
+  if (!plotId || !newClientName || !newClientPhone || !paymentAmount || !paymentMethod || !oldFile || !oldFile.size) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
