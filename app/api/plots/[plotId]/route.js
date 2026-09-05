@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { can, getEffectiveRole, isAllowedRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ALLOCATIONS_TABLE, PLOT_TABLE } from "@/lib/plots";
+import { ALLOCATIONS_TABLE, PLOT_TABLE, plotNumber, streetName } from "@/lib/plots";
 import { writeAuditLog } from "@/lib/audit";
 
 const VALID_OWNERS = ["tsl", "lhc", null];
@@ -132,6 +132,9 @@ export async function PATCH(request, { params }) {
     console.error("Failed to update plot", params.plotId, error);
     return NextResponse.json({ error: "Failed to update plot" }, { status: 500 });
   }
+
+  auditMetadata.plotNumber = plotNumber(data) || "—";
+  auditMetadata.streetName = streetName(data) || "—";
 
   const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
   await writeAuditLog({

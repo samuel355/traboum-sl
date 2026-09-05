@@ -17,6 +17,13 @@ function ActionBadge({ action }) {
   );
 }
 
+function metadataLabel(key) {
+  return {
+    plotNumber: "Plot number",
+    streetName: "Street name",
+  }[key] || key;
+}
+
 export function AuditTrailList({ entries }) {
   const [query, setQuery] = useState("");
   const [actionFilter, setActionFilter] = useState("");
@@ -197,7 +204,7 @@ export function AuditTrailList({ entries }) {
                   <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-navy-500">
                     {Object.entries(entry.metadata).map(([key, value]) => (
                       <div key={key} className="flex gap-1.5">
-                        <dt className="font-medium text-navy-400">{key}:</dt>
+                        <dt className="font-medium text-navy-400">{metadataLabel(key)}:</dt>
                         <dd>{String(value)}</dd>
                       </div>
                     ))}
