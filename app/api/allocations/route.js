@@ -9,6 +9,8 @@ import { allocationPdfKey, uploadToR2 } from "@/lib/r2";
 import { notifyEmails } from "@/lib/email";
 import { notifyPhones } from "@/lib/sms";
 import { writeAuditLog } from "@/lib/audit";
+import { saveClientPhoto, validateClientPhoto } from "@/lib/client-photo";
+import { DOCUMENTS_TABLE } from "@/lib/clients";
 
 export async function POST(request) {
   const user = await currentUser();
@@ -17,8 +19,16 @@ export async function POST(request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const { plotId, plotNumber, streetName, clientName, clientEmail, clientAddress, clientPhone, amount } = body;
+  const form = await request.formData();
+  const plotId = form.get("plotId");
+  const plotNumber = form.get("plotNumber");
+  const streetName = form.get("streetName");
+  const clientName = form.get("clientName");
+  const clientEmail = form.get("clientEmail");
+  const clientAddress = form.get("clientAddress");
+  const clientPhone = form.get("clientPhone");
+  const amount = form.get("amount");
+  const clientPhoto = form.get("clientPhoto");
   const saleAmount = Number(amount);
 
   if (!plotId || !clientName || !clientPhone) {
@@ -56,6 +66,7 @@ export async function POST(request) {
   const agentName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
 
   let clientId;
+  let clientPhotoUrl;
   try {
     clientId = await findOrCreateClient(db, {
       name: clientName,
@@ -65,9 +76,24 @@ export async function POST(request) {
       userId: user.id,
       userName: agentName,
     });
+    validateClientPhoto(clientPhoto);
+    const savedPhoto = await saveClientPhoto(db, clientId, clientPhoto, user.id, agentName);
+    if (savedPhoto) {
+      clientPhotoUrl = savedPhoto.file_url;
+    } else {
+      const { data: existingPhoto } = await db
+        .from(DOCUMENTS_TABLE)
+        .select("file_url")
+        .eq("client_id", clientId)
+        .eq("doc_type", "passport_photo")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      clientPhotoUrl = existingPhoto?.file_url;
+    }
   } catch (err) {
     console.error("Failed to find/create client", err);
-    return NextResponse.json({ error: "Failed to save client details" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Failed to save client details" }, { status: 400 });
   }
 
   const { data: allocation, error: insertError } = await db
@@ -118,6 +144,7 @@ export async function POST(request) {
     clientEmail,
     clientPhone,
     clientAddress,
+    clientPhotoUrl,
     agent: agentName,
     date,
     kind: "Allocation",
@@ -164,7 +191,7 @@ export async function POST(request) {
     metadata: { plotId, plotNumber, streetName, clientName, clientPhone },
   });
 
-  void Promise.allSettled([
+  await Promise.allSettled([
     notifyEmails({
       subject: `Plot ${plotNumber} allocated — Trabuom Stool Lands`,
       templateData: {
@@ -179,7 +206,7 @@ export async function POST(request) {
       pdfFilename: `allocation-${plotNumber}.pdf`,
     }),
     notifyPhones(
-      `TSL: Plot ${plotNumber} has been allocated to ${clientName} by ${agentName}. — Trabuom Stool Lands`,
+      `TSL: Plot ${plotNumber} has been allocated to ${clientName} by ${agentName}. --Trabuom Stool Lands`,
     ),
   ]).then((results) => {
     results

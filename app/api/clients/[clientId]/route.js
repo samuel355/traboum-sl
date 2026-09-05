@@ -6,6 +6,7 @@ import { ALLOCATIONS_TABLE } from "@/lib/plots";
 import { CLIENTS_TABLE, DOCUMENTS_TABLE, RESERVATIONS_TABLE, summarizeClientRecords } from "@/lib/clients";
 import { deleteFromR2ByUrl } from "@/lib/r2";
 import { writeAuditLog } from "@/lib/audit";
+import { saveClientPhoto } from "@/lib/client-photo";
 
 export async function GET(request, { params }) {
   const user = await currentUser();
@@ -72,12 +73,15 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
+  const contentType = request.headers.get("content-type") || "";
+  const body = contentType.includes("multipart/form-data") ? await request.formData() : await request.json();
   const updates = {};
-  if ("name" in body) updates.name = String(body.name ?? "").trim();
-  if ("phone" in body) updates.phone = String(body.phone ?? "").trim();
-  if ("email" in body) updates.email = body.email || null;
-  if ("address" in body) updates.address = body.address || null;
+  const has = (key) => (body instanceof FormData ? body.has(key) : key in body);
+  const get = (key) => body.get ? body.get(key) : body[key];
+  if (has("name")) updates.name = String(get("name") ?? "").trim();
+  if (has("phone")) updates.phone = String(get("phone") ?? "").trim();
+  if (has("email")) updates.email = get("email") || null;
+  if (has("address")) updates.address = get("address") || null;
 
   if ("name" in updates && !updates.name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -99,6 +103,16 @@ export async function PATCH(request, { params }) {
   if (error || !client) {
     console.error("Failed to update client", params.clientId, error);
     return NextResponse.json({ error: "Failed to update client" }, { status: 500 });
+  }
+
+  const clientPhoto = get("clientPhoto");
+  if (clientPhoto) {
+    try {
+      await saveClientPhoto(db, params.clientId, clientPhoto, user.id, [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username);
+    } catch (photoError) {
+      console.error("Failed to save client photo", photoError);
+      return NextResponse.json({ error: photoError.message || "Failed to save client photo" }, { status: 400 });
+    }
   }
 
   const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;

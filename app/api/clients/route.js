@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE } from "@/lib/plots";
 import { CLIENTS_TABLE, RESERVATIONS_TABLE, summarizeClientRecords } from "@/lib/clients";
 import { writeAuditLog } from "@/lib/audit";
+import { saveClientPhoto } from "@/lib/client-photo";
 
 export async function GET() {
   const user = await currentUser();
@@ -47,10 +48,12 @@ export async function POST(request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const name = String(body.name ?? "").trim();
-  const phone = String(body.phone ?? "").trim();
-  const { email, address } = body;
+  const form = await request.formData();
+  const name = String(form.get("name") ?? "").trim();
+  const phone = String(form.get("phone") ?? "").trim();
+  const email = form.get("email");
+  const address = form.get("address");
+  const clientPhoto = form.get("clientPhoto");
 
   if (!name || !phone) {
     return NextResponse.json({ error: "Name and phone are required" }, { status: 400 });
@@ -81,6 +84,14 @@ export async function POST(request) {
   if (error) {
     console.error("Failed to create client", error);
     return NextResponse.json({ error: "Failed to create client" }, { status: 500 });
+  }
+
+  try {
+    await saveClientPhoto(db, client.id, clientPhoto, user.id, actorName);
+  } catch (photoError) {
+    console.error("Failed to save client photo", photoError);
+    await db.from(CLIENTS_TABLE).delete().eq("id", client.id);
+    return NextResponse.json({ error: photoError.message || "Failed to save client photo" }, { status: 400 });
   }
 
   await writeAuditLog({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, X } from "lucide-react";
+import { ClientPhotoField } from "./ClientPhotoField";
 
 const FIELD_CLASS =
   "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
@@ -16,6 +17,7 @@ export function ClientFormModal({ client, onClose, onSaved }) {
   });
   const [state, setState] = useState("idle"); // idle | submitting | error
   const [error, setError] = useState(null);
+  const [clientPhoto, setClientPhoto] = useState(null);
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -25,10 +27,12 @@ export function ClientFormModal({ client, onClose, onSaved }) {
     setError(null);
 
     try {
+      const payload = new FormData();
+      Object.entries(form).forEach(([key, value]) => payload.set(key, value ?? ""));
+      if (clientPhoto) payload.set("clientPhoto", clientPhoto);
       const res = await fetch(isEdit ? `/api/clients/${client.id}` : "/api/clients", {
         method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: payload,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save client");
@@ -77,6 +81,7 @@ export function ClientFormModal({ client, onClose, onSaved }) {
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Address</label>
             <textarea rows={2} className={FIELD_CLASS} value={form.address} onChange={update("address")} />
           </div>
+          <ClientPhotoField file={clientPhoto} onChange={setClientPhoto} />
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 

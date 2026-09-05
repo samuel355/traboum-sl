@@ -6,6 +6,8 @@ import { ALLOCATION_STAGES, ALLOCATIONS_TABLE, PLOT_TABLE } from "@/lib/plots";
 import { allocationPdfKey, deleteFromR2ByUrl, uploadToR2 } from "@/lib/r2";
 import { generateAllocationPdf } from "@/lib/pdf";
 import { writeAuditLog } from "@/lib/audit";
+import { saveClientPhoto } from "@/lib/client-photo";
+import { DOCUMENTS_TABLE } from "@/lib/clients";
 
 const STATUS_KEYS = ALLOCATION_STAGES.map((s) => s.key);
 
@@ -27,59 +29,93 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "Allocation not found" }, { status: 404 });
   }
 
-  const body = await request.json();
+  const contentType = request.headers.get("content-type") || "";
+  const body = contentType.includes("multipart/form-data") ? await request.formData() : await request.json();
+  const has = (key) => (body instanceof FormData ? body.has(key) : key in body);
+  const get = (key) => (body.get ? body.get(key) : body[key]);
   const updates = {};
 
-  if ("clientName" in body) updates.client_name = String(body.clientName ?? "").trim();
-  if ("clientEmail" in body) updates.client_email = body.clientEmail || null;
-  if ("clientPhone" in body) updates.client_phone = String(body.clientPhone ?? "").trim();
-  if ("clientAddress" in body) updates.client_address = body.clientAddress || null;
-  if ("agent" in body) updates.agent = String(body.agent ?? "").trim() || null;
-  if ("plotNumber" in body) updates.plot_number = body.plotNumber || null;
-  if ("streetName" in body) updates.street_name = body.streetName || null;
-  if ("amount" in body) {
-    const amount = Number(body.amount);
+  if (has("clientName")) updates.client_name = String(get("clientName") ?? "").trim();
+  if (has("clientEmail")) updates.client_email = get("clientEmail") || null;
+  if (has("clientPhone")) updates.client_phone = String(get("clientPhone") ?? "").trim();
+  if (has("clientAddress")) updates.client_address = get("clientAddress") || null;
+  if (has("agent")) updates.agent = String(get("agent") ?? "").trim() || null;
+  if (has("plotNumber")) updates.plot_number = get("plotNumber") || null;
+  if (has("streetName")) updates.street_name = get("streetName") || null;
+  if (has("amount")) {
+    const amount = Number(get("amount"));
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: "Amount must be greater than zero" }, { status: 400 });
     }
     updates.amount = amount;
   }
 
-  if ("status" in body) {
-    if (!STATUS_KEYS.includes(body.status)) {
+  if (has("status")) {
+    const status = get("status");
+    if (!STATUS_KEYS.includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
+
     const nextStatus = {
       pending: "signed",
       signed: "ready_to_collect",
       ready_to_collect: "collected",
     }[existing.status];
-    if (body.status !== existing.status && body.status !== nextStatus) {
+    if (status !== existing.status && status !== nextStatus) {
       return NextResponse.json(
         { error: "Allocation statuses must be updated in order." },
         { status: 409 },
       );
     }
-    updates.status = body.status;
+    updates.status = status;
   }
 
-  if ("clientName" in updates && !updates.client_name) {
+  let clientPhotoUrl;
+  const clientPhoto = get("clientPhoto");
+  if (clientPhoto && clientPhoto.size > 0) {
+    try {
+      const photo = await saveClientPhoto(
+        db,
+        existing.client_id,
+        clientPhoto,
+        user.id,
+        [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username,
+      );
+      clientPhotoUrl = photo.file_url;
+    } catch (error) {
+      return NextResponse.json({ error: error.message || "Failed to save client photo" }, { status: 400 });
+    }
+  } else {
+    const { data: existingPhoto } = await db
+      .from(DOCUMENTS_TABLE)
+      .select("file_url")
+      .eq("client_id", existing.client_id)
+      .eq("doc_type", "passport_photo")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    clientPhotoUrl = existingPhoto?.file_url;
+  }
+
+  if ("client_name" in updates && !updates.client_name) {
     return NextResponse.json({ error: "Client name is required" }, { status: 400 });
   }
-  if ("clientPhone" in updates && !updates.client_phone) {
+  if ("client_phone" in updates && !updates.client_phone) {
     return NextResponse.json({ error: "Client phone is required" }, { status: 400 });
   }
 
-  if (!Object.keys(updates).length) {
+  if (!Object.keys(updates).length && !(clientPhoto && clientPhoto.size > 0)) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
-  const { data: allocation, error } = await db
-    .from(ALLOCATIONS_TABLE)
-    .update(updates)
-    .eq("id", params.allocationId)
-    .select()
-    .single();
+  const { data: allocation, error } = Object.keys(updates).length
+    ? await db
+        .from(ALLOCATIONS_TABLE)
+        .update(updates)
+        .eq("id", params.allocationId)
+        .select()
+        .single()
+    : { data: existing, error: null };
 
   if (error || !allocation) {
     console.error("Failed to update allocation", params.allocationId, error);
@@ -103,6 +139,7 @@ export async function PATCH(request, { params }) {
     clientEmail: allocation.client_email,
     clientPhone: allocation.client_phone,
     clientAddress: allocation.client_address,
+    clientPhotoUrl,
     agent: allocation.agent,
     amount: allocation.amount,
     date,

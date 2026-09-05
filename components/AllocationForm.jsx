@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { ViewDocumentButton } from "./ViewDocumentButton";
+import { ClientPhotoField } from "./ClientPhotoField";
 
 const FIELD_CLASS =
   "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
@@ -11,6 +12,7 @@ const FIELD_CLASS =
 export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", address: "", phone: "", amount: "" });
+  const [clientPhoto, setClientPhoto] = useState(null);
   const [state, setState] = useState("idle"); // idle | submitting | done | error
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
@@ -29,19 +31,15 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
     }
 
     try {
+      const payload = new FormData();
+      Object.entries({ plotId, plotNumber, streetName, clientName: form.name, clientEmail: form.email, clientAddress: form.address, clientPhone: form.phone, amount: form.amount }).forEach(([key, value]) =>
+        payload.set(key, value ?? ""),
+      );
+      if (clientPhoto) payload.set("clientPhoto", clientPhoto);
+
       const res = await fetch("/api/allocations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plotId,
-          plotNumber,
-          streetName,
-          clientName: form.name,
-          clientEmail: form.email,
-          clientAddress: form.address,
-          clientPhone: form.phone,
-          amount: form.amount,
-        }),
+        body: payload,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create allocation");
@@ -117,6 +115,7 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
         <label className="mb-1.5 block text-sm font-medium text-navy-700">Address</label>
         <textarea rows={3} className={FIELD_CLASS} value={form.address} onChange={update("address")} />
       </div>
+      <ClientPhotoField file={clientPhoto} onChange={setClientPhoto} />
       <div>
         <label className="mb-1.5 block text-sm font-medium text-navy-700">Amount paid (GHS)</label>
         <input
