@@ -61,8 +61,8 @@ export function ClientsTable({ clients, canManage, canDelete }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative max-w-sm flex-1">
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-sm sm:flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
           <input
             value={query}
@@ -74,7 +74,7 @@ export function ClientsTable({ clients, canManage, canDelete }) {
         {canManage ? (
           <button
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 sm:w-auto"
           >
             <Plus className="h-4 w-4" /> Add client
           </button>
@@ -93,7 +93,8 @@ export function ClientsTable({ clients, canManage, canDelete }) {
             {query ? `No clients match "${query}".` : "No clients yet."}
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <>
+            <table className="hidden w-full text-sm md:table">
             <thead>
               <tr className="border-b border-navy-100 bg-navy-50 text-left text-xs uppercase tracking-wide text-navy-400">
                 <th className="px-4 py-3">Name</th>
@@ -147,7 +148,37 @@ export function ClientsTable({ clients, canManage, canDelete }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+            <div className="divide-y divide-navy-50 md:hidden">
+            {filtered.map((client) => (
+              <div key={client.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-navy-800 to-navy-950 text-[11px] font-bold text-white">
+                      {initials(client.name)}
+                      </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-navy-900">{client.name}</p>
+                      <p className="truncate text-xs text-navy-500">{client.phone}</p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-navy-50 px-2 py-1 text-xs font-semibold text-navy-600">
+                    {client.plotCount} plot{client.plotCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                  <div><p className="text-navy-400">Total paid</p><p className="mt-0.5 font-semibold text-navy-700">{formatGHS(client.totalPaid)}</p></div>
+                  <div><p className="text-navy-400">Remaining</p><p className="mt-0.5 font-semibold text-navy-700">{client.totalRemaining > 0 ? formatGHS(client.totalRemaining) : "—"}</p></div>
+                </div>
+                <div className="mt-3 flex flex-wrap justify-end gap-1 border-t border-navy-50 pt-3">
+                  <button onClick={() => setViewingClientId(client.id)} className={PILL_GHOST}>View</button>
+                  {canManage ? <button onClick={() => setEditingClient(client)} className={PILL_GHOST}><Pencil className="h-3 w-3" /> Edit</button> : null}
+                  {canDelete ? <button onClick={() => setDeletingClient(client)} className={PILL_DANGER}><Trash2 className="h-3 w-3" /> Delete</button> : null}
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </div>
 

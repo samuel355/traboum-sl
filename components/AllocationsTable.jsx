@@ -94,7 +94,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
 
   return (
     <div>
-      <div className="relative max-w-sm">
+      <div className="relative w-full sm:max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
         <input
           value={query}
@@ -120,7 +120,8 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
             {query ? `No allocations match "${query}".` : "No allocations recorded yet."}
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <>
+            <table className="hidden w-full text-sm md:table">
             <thead>
               <tr className="border-b border-navy-100 bg-navy-50 text-left text-xs uppercase tracking-wide text-navy-400">
                 <th className="px-4 py-3">Plot</th>
@@ -197,7 +198,32 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+            <div className="divide-y divide-navy-50 md:hidden">
+            {filtered.map((row) => (
+              <div key={row.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-navy-900">Plot {row.plot_number || "—"}</p>
+                    <p className="truncate text-xs text-navy-500">{row.street_name || "Street not set"}</p>
+                    </div>
+                  <StatusBadge status={row.status} />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                  <div><p className="text-navy-400">Client</p><p className="mt-0.5 truncate font-semibold text-navy-700">{row.client_name}</p></div>
+                  <div><p className="text-navy-400">Phone</p><p className="mt-0.5 truncate text-navy-600">{row.client_phone}</p></div>
+                  <div><p className="text-navy-400">Reference</p><p className="mt-0.5 truncate text-navy-600">{row.reference_number || "—"}</p></div>
+                  <div><p className="text-navy-400">Date</p><p className="mt-0.5 text-navy-600">{new Date(row.created_at).toLocaleDateString("en-GB")}</p></div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-navy-50 pt-3">
+                  {row.pdf_url ? <ViewDocumentButton url={`${row.pdf_url}${row.updated_at ? `?v=${encodeURIComponent(row.updated_at)}` : ""}`} title={`Allocation — Plot ${row.plot_number}`} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-50" /> : null}
+                  {canManage ? <button onClick={() => setEditingAllocation(row)} className={PILL_GHOST}><Pencil className="h-3 w-3" /> Edit</button> : null}
+                  {canDelete ? <button onClick={() => setDeletingAllocation(row)} className={PILL_DANGER}><Trash2 className="h-3 w-3" /> Delete</button> : null}
+                </div>
+              </div>
+            ))}
+            </div>
+          </>
         )}
       </div>
 

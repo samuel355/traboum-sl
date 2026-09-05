@@ -17,11 +17,11 @@ export default async function AllocationsPage() {
     .limit(200);
 
   return (
-    <div className="p-6 md:p-10">
-      <h1 className="text-2xl font-bold text-navy-900">Allocations</h1>
+    <div className="p-4 sm:p-6 md:p-10">
+      <h1 className="text-xl font-bold text-navy-900 sm:text-2xl">Allocations</h1>
       <p className="mt-1 text-sm text-navy-500">Every plot allocated to a client, most recent first.</p>
 
-      <div className="mt-6">
+      <div className="mt-5 sm:mt-6">
         {error ? (
           <p className="rounded-xl border border-navy-100 bg-white p-6 text-sm text-red-600">
             Couldn&apos;t load allocations: {error.message}

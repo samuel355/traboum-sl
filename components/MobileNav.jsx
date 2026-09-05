@@ -19,9 +19,9 @@ export function MobileNav({ showUsers, showSettings }) {
   if (showSettings) items = [...items, { href: "/dashboard/settings", label: "Settings" }];
 
   return (
-    <div className="md:hidden fixed top-0 inset-x-0 z-20 bg-navy-900 flex items-center h-14 px-3">
-      <span className="text-white font-bold text-sm mr-3 shrink-0">TSL</span>
-      <div className="flex gap-1 overflow-x-auto thin-scroll">
+    <div className="fixed inset-x-0 top-0 z-20 flex h-14 items-center bg-navy-900 px-3 shadow-lg md:hidden">
+      <span className="mr-3 shrink-0 text-sm font-bold text-white">TSL</span>
+      <div className="thin-scroll flex min-w-0 gap-1 overflow-x-auto">
         {items.map(({ href, label, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href);
           return (

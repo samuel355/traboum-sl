@@ -160,14 +160,14 @@ export function DashboardMapView({ plots, loadError, role }) {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <header className="border-b border-navy-100 bg-white px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col md:h-screen">
+      <header className="border-b border-navy-100 bg-white px-4 py-3 sm:px-6 sm:py-4">
         <div>
-          <h1 className="text-lg font-bold text-navy-900">Plot Map</h1>
+          <h1 className="text-base font-bold text-navy-900 sm:text-lg">Plot Map</h1>
           <p className="text-xs text-navy-400">Trabuom Stool Lands plots (Sector 1 layout)</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="thin-scroll flex max-w-full gap-2 overflow-x-auto pb-1">
             <StatPill value={stats.total} label="Total" />
             <StatPill value={stats.available} label="Available" tone="text-green-700" />
             <StatPill value={stats.reserved} label="Reserved" tone="text-navy-900" />
@@ -177,10 +177,10 @@ export function DashboardMapView({ plots, loadError, role }) {
 
           <div className="hidden h-9 w-px bg-navy-100 sm:block" />
 
-          <div className="flex items-center gap-1 rounded-lg bg-navy-50 p-1 shadow-sm ring-1 ring-navy-100">
+          <div className="flex w-full items-center gap-1 rounded-lg bg-navy-50 p-1 shadow-sm ring-1 ring-navy-100 sm:w-auto">
             <button
               onClick={() => setView("map")}
-              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition sm:flex-none ${
                 view === "map" ? "bg-navy-900 text-white shadow-sm" : "text-navy-600 hover:bg-white"
               }`}
             >
@@ -188,7 +188,7 @@ export function DashboardMapView({ plots, loadError, role }) {
             </button>
             <button
               onClick={() => setView("list")}
-              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition sm:flex-none ${
                 view === "list" ? "bg-navy-900 text-white shadow-sm" : "text-navy-600 hover:bg-white"
               }`}
             >
@@ -196,8 +196,8 @@ export function DashboardMapView({ plots, loadError, role }) {
             </button>
           </div>
         </div>
-        <div className="flex w-full flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
+        <div className="mt-3 grid w-full grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+          <div className="relative min-w-0 flex-1 sm:min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
             <input
               value={filterQuery}
