@@ -1,7 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { can, getEffectiveRole, ROLES } from "@/lib/roles";
-import { fetchAllPlots, plotNumber, plotOwner, plotStatus, statusKey, streetName } from "@/lib/plots";
+import { fetchAllPlots, formatPlotSize, getPolygonPath, plotNumber, plotOwner, plotStatus, statusKey, streetName } from "@/lib/plots";
 import { TransferForm } from "@/components/TransferForm";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,7 @@ export default async function NewTransferPage({ searchParams }) {
       id: plot.id,
       plotNumber: plotNumber(plot),
       streetName: streetName(plot),
+      plotSize: formatPlotSize(plot),
       currentClientName: plot.currentClientName,
       geometry: plot.geometry,
     }));

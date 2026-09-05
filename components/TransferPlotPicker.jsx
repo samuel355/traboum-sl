@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GoogleMap, Polygon, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, Polygon, useJsApiLoader } from "@react-google-maps/api";
 import { Check, Map as MapIcon, Search } from "lucide-react";
 import { getPolygonCenter, getPolygonPath } from "@/lib/plots";
 
@@ -11,6 +11,7 @@ const MAP_OPTIONS = { clickableIcons: false, disableDefaultUI: true, gestureHand
 export function TransferPlotPicker({ plots, value, onChange }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState("search");
+  const [candidate, setCandidate] = useState(null);
   const { isLoaded, loadError } = useJsApiLoader({
     id: "tsl-transfer-map",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
@@ -27,10 +28,20 @@ export function TransferPlotPicker({ plots, value, onChange }) {
   }, [plots, query]);
 
   const selected = plots.find((plot) => String(plot.id) === String(value));
+  const activeCandidate = candidate || selected;
   const center = useMemo(() => {
-    const path = getPolygonPath(selected || plots[0] || {});
+    const path = getPolygonPath(activeCandidate || plots[0] || {});
     return getPolygonCenter(path) || { lat: 6.5967673, lng: -1.7712608 };
-  }, [plots, selected]);
+  }, [plots, activeCandidate]);
+
+  function inspect(plot) {
+    setCandidate(plot);
+  }
+
+  function choose(plot) {
+    onChange(String(plot.id));
+    setCandidate(null);
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm">
@@ -59,31 +70,73 @@ export function TransferPlotPicker({ plots, value, onChange }) {
           </div>
           <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
             {!filtered.length ? <p className="py-8 text-center text-sm text-navy-400">No sold plots match your search.</p> : filtered.map((plot) => (
-              <button type="button" key={plot.id} onClick={() => onChange(String(plot.id))} className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${String(value) === String(plot.id) ? "border-amber-400 bg-amber-50" : "border-navy-100 hover:border-navy-300 hover:bg-navy-50"}`}>
+              <button type="button" key={plot.id} onClick={() => inspect(plot)} className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${String(value) === String(plot.id) ? "border-amber-400 bg-amber-50" : "border-navy-100 hover:border-navy-300 hover:bg-navy-50"}`}>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-bold text-navy-900">Plot {plot.plotNumber || "—"}</span>
-                  <span className="block truncate text-xs text-navy-500">{plot.streetName || "Street not set"}{plot.currentClientName ? ` · ${plot.currentClientName}` : ""}</span>
+                  <span className="block truncate text-xs text-navy-500">{plot.plotSize?.replace("\n", " · ")} · {plot.streetName || "Street not set"}</span>
                 </span>
                 {String(value) === String(plot.id) ? <Check className="h-4 w-4 shrink-0 text-amber-700" /> : null}
               </button>
             ))}</div>
+          {candidate ? <PlotChoiceCard plot={candidate} onChoose={() => choose(candidate)} /> : null}
         </div>
       ) : (
         <div className="h-80">
           {!isLoaded ? <div className="flex h-full items-center justify-center text-sm text-navy-400">{loadError ? "Map unavailable" : "Loading map…"}</div> : (
-            <GoogleMap mapContainerStyle={MAP_STYLE} center={center} zoom={16} options={MAP_OPTIONS}>
+            <GoogleMap
+              mapContainerStyle={MAP_STYLE}
+              center={center}
+              zoom={16}
+              options={MAP_OPTIONS}
+              onLoad={(map) => {
+                const bounds = new window.google.maps.LatLngBounds();
+                plots.forEach((plot) => getPolygonPath(plot).forEach((point) => bounds.extend(point)));
+                if (!bounds.isEmpty()) map.fitBounds(bounds, 40);
+              }}
+            >
               {plots.map((plot) => {
                 const path = getPolygonPath(plot);
                 if (path.length < 3) return null;
                 const active = String(value) === String(plot.id);
-                return <Polygon key={plot.id} path={path} onClick={() => onChange(String(plot.id))} options={{ fillColor: active ? "#B88320" : "#dc2626", fillOpacity: active ? 0.75 : 0.35, strokeColor: active ? "#8b6416" : "#991b1b", strokeWeight: active ? 3 : 1.5, clickable: true }} />;
+                return (
+                  <Polygon
+                    key={plot.id}
+                    path={path}
+                    onClick={() => inspect(plot)}
+                    options={{ fillColor: active ? "#B88320" : "#dc2626", fillOpacity: active ? 0.75 : 0.35, strokeColor: active ? "#8b6416" : "#991b1b", strokeWeight: active ? 3 : 1.5, clickable: true }}
+                  />
+                );
               })}
+              {candidate && getPolygonCenter(getPolygonPath(candidate)) ? <InfoWindow position={getPolygonCenter(getPolygonPath(candidate))} onCloseClick={() => setCandidate(null)}>
+                <div className="w-56 p-1 text-navy-900">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Sold plot</p>
+                  <p className="mt-1 font-bold">Plot {candidate.plotNumber || "—"}</p>
+                  <p className="mt-1 text-xs text-navy-500">{candidate.plotSize?.replace("\n", " · ")} · {candidate.streetName || "Street not set"}</p>
+                  <button type="button" onClick={() => choose(candidate)} className="mt-3 w-full rounded-lg bg-navy-900 px-3 py-2 text-xs font-bold text-white">Choose this plot</button>
+                </div>
+              </InfoWindow> : null}
             </GoogleMap>
           )}
         </div>
       )}
 
       {selected ? <div className="border-t border-navy-100 bg-amber-50 px-4 py-3 text-xs text-navy-700"><span className="font-bold">Selected:</span> Plot {selected.plotNumber || "—"}{selected.streetName ? ` — ${selected.streetName}` : ""}</div> : null}
+    </div>
+  );
+}
+
+function PlotChoiceCard({ plot, onChoose }) {
+  return (
+    <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Plot details</p>
+          <p className="mt-1 font-bold text-navy-900">Plot {plot.plotNumber || "—"}</p>
+          <p className="mt-1 text-xs text-navy-600">{plot.plotSize?.replace("\n", " · ")}</p>
+          <p className="text-xs text-navy-600">{plot.streetName || "Street not set"}</p>
+        </div>
+        <button type="button" onClick={onChoose} className="shrink-0 rounded-lg bg-navy-900 px-3 py-2 text-xs font-bold text-white hover:bg-navy-800">Choose</button>
+      </div>
     </div>
   );
 }
