@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { GoogleMap, InfoWindow, Polygon, useJsApiLoader } from "@react-google-maps/api";
-import { Check, Map as MapIcon, Search } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { GoogleMap, InfoWindow, OverlayView, Polygon, useJsApiLoader } from "@react-google-maps/api";
+import { Check, LocateFixed, Map as MapIcon, Minus, Plus, Search } from "lucide-react";
 import { getPolygonCenter, getPolygonPath } from "@/lib/plots";
 
 const MAP_STYLE = { width: "100%", height: "100%" };
@@ -12,6 +12,7 @@ export function TransferPlotPicker({ plots, value, onChange }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState("search");
   const [candidate, setCandidate] = useState(null);
+  const mapRef = useRef(null);
   const { isLoaded, loadError } = useJsApiLoader({
     id: "tsl-transfer-map",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
@@ -43,6 +44,14 @@ export function TransferPlotPicker({ plots, value, onChange }) {
     setCandidate(null);
   }
 
+  function fitAll() {
+    const map = mapRef.current;
+    if (!map || !window.google?.maps) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    plots.forEach((plot) => getPolygonPath(plot).forEach((point) => bounds.extend(point)));
+    if (!bounds.isEmpty()) map.fitBounds(bounds, 40);
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm">
       <div className="border-b border-navy-100 bg-navy-50/60 p-4">
@@ -68,32 +77,41 @@ export function TransferPlotPicker({ plots, value, onChange }) {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search plot number or street" className="w-full rounded-xl border border-navy-100 py-3 pl-9 pr-3 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15" />
           </div>
-          <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+          <p className="mt-3 text-xs text-navy-400">{filtered.length} sold plot{filtered.length === 1 ? "" : "s"} found</p>
+          <div className="mt-2 max-h-72 space-y-2 overflow-y-auto">
             {!filtered.length ? <p className="py-8 text-center text-sm text-navy-400">No sold plots match your search.</p> : filtered.map((plot) => (
-              <button type="button" key={plot.id} onClick={() => inspect(plot)} className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${String(value) === String(plot.id) ? "border-amber-400 bg-amber-50" : "border-navy-100 hover:border-navy-300 hover:bg-navy-50"}`}>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-bold text-navy-900">Plot {plot.plotNumber || "—"}</span>
-                  <span className="block truncate text-xs text-navy-500">{plot.plotSize?.replace("\n", " · ")} · {plot.streetName || "Street not set"}</span>
-                </span>
-                {String(value) === String(plot.id) ? <Check className="h-4 w-4 shrink-0 text-amber-700" /> : null}
-              </button>
+              <div key={plot.id} className={`rounded-xl border p-3 transition ${String(value) === String(plot.id) ? "border-amber-400 bg-amber-50" : "border-navy-100"}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <button type="button" onClick={() => inspect(plot)} className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-sm font-bold text-navy-900">Plot {plot.plotNumber || "—"}</span>
+                    <span className="block truncate text-xs text-navy-500">{plot.plotSize?.replace("\n", " · ") || "Size not set"} · {plot.streetName || "Street not set"}</span>
+                  </button>
+                  <button type="button" onClick={() => choose(plot)} className="shrink-0 rounded-lg bg-navy-900 px-3 py-2 text-xs font-bold text-white hover:bg-navy-800">
+                    {String(value) === String(plot.id) ? "Chosen" : "Choose"}
+                  </button>
+                </div>
+                {candidate?.id === plot.id ? <p className="mt-2 border-t border-amber-200 pt-2 text-xs text-navy-600">Current allottee: {plot.currentClientName || "Not recorded"}</p> : null}
+              </div>
             ))}</div>
           {candidate ? <PlotChoiceCard plot={candidate} onChoose={() => choose(candidate)} /> : null}
         </div>
       ) : (
-        <div className="h-80">
-          {!isLoaded ? <div className="flex h-full items-center justify-center text-sm text-navy-400">{loadError ? "Map unavailable" : "Loading map…"}</div> : (
-            <GoogleMap
-              mapContainerStyle={MAP_STYLE}
-              center={center}
-              zoom={16}
-              options={MAP_OPTIONS}
-              onLoad={(map) => {
-                const bounds = new window.google.maps.LatLngBounds();
-                plots.forEach((plot) => getPolygonPath(plot).forEach((point) => bounds.extend(point)));
-                if (!bounds.isEmpty()) map.fitBounds(bounds, 40);
-              }}
-            >
+        <div>
+          {!plots.length ? <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-navy-400"><p>No sold plots are available for transfer.</p><button type="button" onClick={() => setView("search")} className="font-semibold text-navy-700 underline">Use search instead</button></div> : !isLoaded ? <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-navy-400"><p>{loadError ? "Map unavailable in this browser." : "Loading map…"}</p>{loadError ? <button type="button" onClick={() => setView("search")} className="font-semibold text-navy-700 underline">Use search instead</button> : null}</div> : (
+            <div className="relative h-[28rem] min-h-[360px] w-full">
+              <GoogleMap
+                mapContainerStyle={MAP_STYLE}
+                center={center}
+                zoom={16}
+                options={MAP_OPTIONS}
+                onLoad={(map) => {
+                  mapRef.current = map;
+                  fitAll();
+                }}
+                onUnmount={() => {
+                  mapRef.current = null;
+                }}
+              >
               {plots.map((plot) => {
                 const path = getPolygonPath(plot);
                 if (path.length < 3) return null;
@@ -107,6 +125,29 @@ export function TransferPlotPicker({ plots, value, onChange }) {
                   />
                 );
               })}
+              {plots.map((plot) => {
+                const center = getPolygonCenter(getPolygonPath(plot));
+                if (!center) return null;
+                return (
+                  <OverlayView
+                    key={`plot-label-${plot.id}`}
+                    position={center}
+                    mapPaneName="floatPane"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => inspect(plot)}
+                      className={`-translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-md px-1.5 py-1 text-[10px] font-bold shadow-sm ${
+                        String(value) === String(plot.id)
+                          ? "bg-amber-400 text-navy-950"
+                          : "bg-white/95 text-navy-900"
+                      }`}
+                    >
+                      {plot.plotNumber || "—"}
+                    </button>
+                  </OverlayView>
+                );
+              })}
               {candidate && getPolygonCenter(getPolygonPath(candidate)) ? <InfoWindow position={getPolygonCenter(getPolygonPath(candidate))} onCloseClick={() => setCandidate(null)}>
                 <div className="w-56 p-1 text-navy-900">
                   <p className="text-xs font-semibold uppercase tracking-wide text-navy-400">Sold plot</p>
@@ -115,8 +156,28 @@ export function TransferPlotPicker({ plots, value, onChange }) {
                   <button type="button" onClick={() => choose(candidate)} className="mt-3 w-full rounded-lg bg-navy-900 px-3 py-2 text-xs font-bold text-white">Choose this plot</button>
                 </div>
               </InfoWindow> : null}
-            </GoogleMap>
+              </GoogleMap>
+              <div className="absolute right-3 top-3 z-10 flex flex-col overflow-hidden rounded-xl border border-navy-100 bg-white shadow-lg">
+                <button type="button" onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 16) + 1)} className="flex h-10 w-10 items-center justify-center text-navy-700 hover:bg-navy-50" aria-label="Zoom in">
+                  <Plus className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => mapRef.current?.setZoom(Math.max(1, (mapRef.current.getZoom() || 16) - 1))} className="flex h-10 w-10 items-center justify-center border-t border-navy-100 text-navy-700 hover:bg-navy-50" aria-label="Zoom out">
+                  <Minus className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={fitAll} className="flex h-10 w-10 items-center justify-center border-t border-navy-100 text-navy-700 hover:bg-navy-50" aria-label="Fit all plots">
+                  <LocateFixed className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="absolute bottom-3 left-3 z-10 rounded-lg bg-navy-900/85 px-3 py-2 text-[11px] font-medium text-white shadow-sm">
+                Click a plot or its number to view details
+              </div>
+            </div>
           )}
+          {candidate ? (
+            <div className="border-t border-amber-200 bg-amber-50 p-4">
+              <PlotChoiceCard plot={candidate} onChoose={() => choose(candidate)} />
+            </div>
+          ) : null}
         </div>
       )}
 
