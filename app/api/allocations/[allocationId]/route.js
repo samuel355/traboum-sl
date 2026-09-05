@@ -122,6 +122,21 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "Failed to update allocation" }, { status: 500 });
   }
 
+  const statusOnlyUpdate = Object.keys(updates).length === 1 && "status" in updates;
+  if (statusOnlyUpdate) {
+    const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
+    await writeAuditLog({
+      actorId: user.id,
+      actorName,
+      actorRole: role,
+      action: "allocation.updated",
+      entityType: ALLOCATIONS_TABLE,
+      entityId: params.allocationId,
+      metadata: updates,
+    });
+    return NextResponse.json({ allocation });
+  }
+
   const allocationDate = allocation.created_at || new Date().toISOString();
   const date = new Date(allocationDate);
   const referenceNumber = `TSL-${String(allocation.id).slice(-8).toUpperCase()}`;
