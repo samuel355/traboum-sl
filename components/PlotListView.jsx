@@ -31,6 +31,7 @@ export function PlotListView({ plots, totalPlots, role, query, onEdit, onView })
                 <th className="px-4 py-3">Area</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Owner</th>
+                <th className="px-4 py-3">Allocated to</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -44,6 +45,9 @@ export function PlotListView({ plots, totalPlots, role, query, onEdit, onView })
                     <StatusPill status={plotStatus(plot)} />
                   </td>
                   <td className="px-4 py-3 text-navy-500">{ownerLabel(plotOwner(plot))}</td>
+                  <td className="px-4 py-3 text-navy-500">
+                    {plotStatus(plot).toLowerCase() === "sold" ? plot.currentClientName || "—" : "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-4">
                       <button

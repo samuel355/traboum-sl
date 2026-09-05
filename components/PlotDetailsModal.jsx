@@ -77,6 +77,12 @@ export function PlotDetailsModal({ plotId, onClose, role }) {
             <div className="mt-5 grid grid-cols-2 gap-4 rounded-xl border border-navy-100 bg-navy-50/50 p-4 text-sm">
               <Field label="Status" value={plotStatus(data.plot)} />
               <Field label="Owner" value={ownerLabel(plotOwner(data.plot))} />
+              {plotStatus(data.plot).toLowerCase() === "sold" ? (
+                <Field
+                  label="Allocated to"
+                  value={data.transfers[0]?.new_client_name || data.allocations[0]?.client_name || "Client not recorded"}
+                />
+              ) : null}
               <Field label="Area" value={formatArea(data.plot)} />
               <Field label="Street" value={streetName(data.plot) || "—"} />
             </div>

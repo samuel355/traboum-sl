@@ -573,6 +573,12 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
             <p className="text-[10px] uppercase tracking-wide text-slate-400">Owner</p>
             <p className="mt-1 font-semibold text-slate-900">{ownerLabel(owner)}</p>
           </div>
+          {key === "sold" ? (
+            <div className="col-span-2 rounded-xl border border-amber-100 bg-amber-50 p-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-amber-700">Allocated to</p>
+              <p className="mt-1 font-semibold text-slate-900">{plot.currentClientName || "Client not recorded"}</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-2.5">
