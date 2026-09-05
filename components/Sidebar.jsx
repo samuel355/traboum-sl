@@ -33,7 +33,7 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-navy-900">
       <div className="flex items-center gap-2.5 px-6 py-6">
-        <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-navy-900 font-bold text-sm">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-sm font-bold text-navy-950 shadow-sm">
           TSL
         </div>
         <div>
@@ -50,7 +50,7 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
               key={href}
               href={href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                active ? "bg-white text-navy-900" : "text-navy-100 hover:bg-white/10"
+                active ? "bg-amber-400 text-navy-950 shadow-sm" : "text-navy-100 hover:bg-white/10"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -62,7 +62,7 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
 
       <div className="border-t border-white/10 px-4 py-4 flex items-center gap-3">
         <SignOutAuditButton
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-xs font-bold text-navy-900"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-navy-950"
           aria-label="Sign out"
         >
           {name?.charAt(0)?.toUpperCase() || "S"}

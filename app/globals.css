@@ -6,13 +6,28 @@
 
 :root {
   --font-sans: "Outfit", system-ui, sans-serif;
+  --brand-navy: #0b0e2d;
+  --brand-gold: #d9a441;
+  --brand-paper: #f7f8fb;
 }
 
 html,
 body {
   font-family: var(--font-sans);
   color: #0b0e2d;
-  background: #f7f8fb;
+  background: var(--brand-paper);
+}
+
+::selection {
+  color: var(--brand-navy);
+  background: #f7d98a;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--brand-gold) !important;
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.16) !important;
 }
 
 button,

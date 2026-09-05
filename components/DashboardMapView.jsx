@@ -38,7 +38,7 @@ const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const MAP_OPTIONS = {
   clickableIcons: false,
   disableDefaultUI: true,
-  gestureHandling: "cooperative",
+  gestureHandling: "greedy",
   scrollwheel: true,
 };
 
@@ -94,7 +94,7 @@ export function DashboardMapView({ plots, loadError, role }) {
       return matchesQuery && matchesStatus && matchesOwner;
     });
   }, [plots, filterQuery, filterStatus, filterOwner]);
-  const stats = useStats(filteredPlots);
+  const stats = useStats(plots);
 
   const syncViewport = () => {
     if (!mapRef.current) return;
@@ -168,11 +168,40 @@ export function DashboardMapView({ plots, loadError, role }) {
         </div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="thin-scroll flex max-w-full gap-2 overflow-x-auto pb-1">
-            <StatPill value={stats.total} label="Total" />
-            <StatPill value={stats.available} label="Available" tone="text-green-700" />
-            <StatPill value={stats.reserved} label="Reserved" tone="text-navy-900" />
-            <StatPill value={stats.sold} label="Sold" tone="text-red-600" />
-            <StatPill value={stats.hold} label="On Hold" tone="text-gray-500" />
+            <StatPill
+              value={stats.total}
+              label="Total"
+              active={filterStatus === "all"}
+              onClick={() => setFilterStatus("all")}
+            />
+            <StatPill
+              value={stats.available}
+              label="Available"
+              tone="text-green-700"
+              active={filterStatus === "available"}
+              onClick={() => setFilterStatus("available")}
+            />
+            <StatPill
+              value={stats.reserved}
+              label="Reserved"
+              tone="text-navy-900"
+              active={filterStatus === "reserved"}
+              onClick={() => setFilterStatus("reserved")}
+            />
+            <StatPill
+              value={stats.sold}
+              label="Sold"
+              tone="text-red-600"
+              active={filterStatus === "sold"}
+              onClick={() => setFilterStatus("sold")}
+            />
+            <StatPill
+              value={stats.hold}
+              label="On Hold"
+              tone="text-gray-500"
+              active={filterStatus === "hold"}
+              onClick={() => setFilterStatus("hold")}
+            />
           </div>
 
           <div className="hidden h-9 w-px bg-navy-100 sm:block" />
@@ -181,7 +210,7 @@ export function DashboardMapView({ plots, loadError, role }) {
             <button
               onClick={() => setView("map")}
               className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition sm:flex-none ${
-                view === "map" ? "bg-navy-900 text-white shadow-sm" : "text-navy-600 hover:bg-white"
+                view === "map" ? "bg-navy-900 text-amber-300 shadow-sm" : "text-navy-600 hover:bg-white"
               }`}
             >
               <MapIcon className="h-4 w-4" /> Map
@@ -189,7 +218,7 @@ export function DashboardMapView({ plots, loadError, role }) {
             <button
               onClick={() => setView("list")}
               className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition sm:flex-none ${
-                view === "list" ? "bg-navy-900 text-white shadow-sm" : "text-navy-600 hover:bg-white"
+                view === "list" ? "bg-navy-900 text-amber-300 shadow-sm" : "text-navy-600 hover:bg-white"
               }`}
             >
               <List className="h-4 w-4" /> List
@@ -431,12 +460,21 @@ export function DashboardMapView({ plots, loadError, role }) {
   );
 }
 
-function StatPill({ value, label, tone = "text-navy-900" }) {
+function StatPill({ value, label, tone = "text-navy-900", active, onClick }) {
   return (
-    <div className="rounded-lg border border-navy-100 px-3 py-1.5 text-center min-w-[64px]">
-      <p className={`text-sm font-bold ${tone}`}>{value}</p>
-      <p className="text-[10px] text-navy-400">{label}</p>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`min-w-[64px] rounded-lg border px-3 py-1.5 text-center transition ${
+        active
+          ? "border-navy-900 bg-navy-900 shadow-sm"
+          : "border-navy-100 bg-white hover:border-navy-300 hover:bg-navy-50"
+      }`}
+    >
+      <p className={`text-sm font-bold ${active ? "text-white" : tone}`}>{value}</p>
+      <p className={`text-[10px] ${active ? "text-navy-200" : "text-navy-400"}`}>{label}</p>
+    </button>
   );
 }
 

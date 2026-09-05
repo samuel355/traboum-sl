@@ -42,7 +42,7 @@ export function SignInLauncher() {
       type="button"
       onClick={handleClick}
       disabled={!isLoaded}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-white hover:bg-navy-800"
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-amber-300 shadow-sm hover:bg-navy-800"
     >
       Sign in
       <ArrowRight className="h-4 w-4" />
