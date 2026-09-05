@@ -11,7 +11,7 @@ export default async function AuditTrailPage() {
     .limit(300);
 
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <h1 className="text-2xl font-bold text-navy-900">Audit Trail</h1>
       <p className="mt-1 text-sm text-navy-500">
         Every allocation, transfer, and staff change — kept for crosscheck.

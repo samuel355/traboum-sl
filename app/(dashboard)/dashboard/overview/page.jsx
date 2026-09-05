@@ -36,7 +36,7 @@ export default async function OverviewPage() {
     .reduce((sum, r) => sum + Math.max(Number(r.total_amount) - Number(r.amount_paid), 0), 0);
 
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <h1 className="text-2xl font-bold text-navy-900">Dashboard</h1>
       <p className="mt-1 text-sm text-navy-500">A quick overview of plots, clients, and payments.</p>
 

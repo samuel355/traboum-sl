@@ -15,7 +15,7 @@ export default async function SettingsPage() {
   const settings = await fetchSettings(supabaseAdmin());
 
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-4 sm:p-6 md:p-10">
       <h1 className="text-2xl font-bold text-navy-900">Settings</h1>
       <p className="mt-1 text-sm text-navy-500">
         Controls the default reservation deposit and balance payment period used across the app.
