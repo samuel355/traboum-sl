@@ -16,11 +16,11 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
   const [state, setState] = useState("idle"); // idle | submitting | done | error
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [reviewing, setReviewing] = useState(false);
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function submitAllocation() {
     setState("submitting");
     setError(null);
 
@@ -49,6 +49,69 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
       setError(err.message);
       setState("error");
     }
+  }
+
+  function onSubmit(e) {
+    e.preventDefault();
+    if (!reviewing) {
+      if (!form.name.trim() || !form.phone.trim() || !form.amount) {
+        setError("Complete the client name, phone number, and amount before reviewing.");
+        setState("error");
+        return;
+      }
+      setError(null);
+      setReviewing(true);
+      return;
+    }
+    submitAllocation();
+  }
+
+  if (reviewing && state !== "done") {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Allocation preview</p>
+          <h2 className="mt-1 text-lg font-bold text-navy-900">Review before generating</h2>
+          <p className="mt-1 text-sm text-navy-600">
+            Confirm that the information below is correct. The official allocation document will be generated after confirmation.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-navy-100 bg-white p-4 shadow-sm sm:p-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PreviewField label="Plot number" value={plotNumber || "—"} />
+            <PreviewField label="Street" value={streetName || "—"} />
+            <PreviewField label="Agent" value={agentName || "—"} />
+            <PreviewField label="Amount paid" value={`GHS ${Number(form.amount || 0).toLocaleString("en-GH", { minimumFractionDigits: 2 })}`} />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-navy-100 bg-white p-4 shadow-sm sm:p-5">
+          <p className="mb-4 text-sm font-bold text-navy-900">Client details</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PreviewField label="Full name" value={form.name || "—"} />
+            <PreviewField label="Phone number" value={form.phone || "—"} />
+            <PreviewField label="Email" value={form.email || "—"} />
+            <PreviewField label="Address" value={form.address || "—"} />
+          </div>
+          <p className="mt-4 text-xs text-navy-500">
+            Client photo: <span className="font-semibold text-navy-700">{clientPhoto ? clientPhoto.name : "Not provided"}</span>
+          </p>
+        </div>
+
+        {error ? <p className="rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-600">{error}</p> : null}
+
+        <div className="flex gap-3">
+          <button type="button" onClick={() => { setReviewing(false); setError(null); }} className="flex-1 rounded-xl border border-navy-200 px-4 py-3 text-sm font-semibold text-navy-700 hover:bg-navy-50">
+            Edit details
+          </button>
+          <button type="button" onClick={submitAllocation} disabled={state === "submitting"} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-navy-950 hover:bg-amber-300 disabled:opacity-60">
+            {state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Generate allocation
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (state === "done" && result) {
@@ -134,8 +197,17 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3.5 text-sm font-bold text-navy-950 shadow-sm hover:bg-amber-300 disabled:opacity-60"
       >
         {state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Generate allocation document
+        Review allocation
       </button>
     </form>
+  );
+}
+
+function PreviewField({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs text-navy-400">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-navy-900">{value}</p>
+    </div>
   );
 }
