@@ -117,7 +117,6 @@ export async function POST(request) {
     agent: recordedByName,
     amount: paymentAmount,
     date,
-    kind: "Transfer of Allocation",
   });
 
   let pdfUrl = null;
