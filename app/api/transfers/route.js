@@ -9,6 +9,8 @@ import { transferPdfKey, uploadToR2 } from "@/lib/r2";
 import { notifyEmails } from "@/lib/email";
 import { notifyPhones } from "@/lib/sms";
 import { writeAuditLog } from "@/lib/audit";
+import { saveClientPhotoFromUrl } from "@/lib/client-photo";
+import { DOCUMENTS_TABLE } from "@/lib/clients";
 
 export async function POST(request) {
   const user = await currentUser();
@@ -29,6 +31,7 @@ export async function POST(request) {
   const paymentMethod = form.get("paymentMethod");
   const paymentReference = form.get("paymentReference");
   const oldFileUrl = form.get("oldAllocationFileUrl");
+  const clientPhotoUrl = form.get("clientPhotoUrl");
   const publicR2Base = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
 
   if (
@@ -67,9 +70,18 @@ export async function POST(request) {
       userId: user.id,
       userName: recordedByName,
     });
+    if (clientPhotoUrl) {
+      await saveClientPhotoFromUrl(db, clientId, clientPhotoUrl, user.id, recordedByName);
+    }
   } catch (err) {
     console.error("Failed to find/create client", err);
     return NextResponse.json({ error: "Failed to save client details" }, { status: 500 });
+  }
+
+  let resolvedPhotoUrl = clientPhotoUrl || null;
+  if (!resolvedPhotoUrl) {
+    const { data: existingPhoto } = await db.from(DOCUMENTS_TABLE).select("file_url").eq("client_id", clientId).eq("doc_type", "passport_photo").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    resolvedPhotoUrl = existingPhoto?.file_url || null;
   }
 
   const { data: transfer, error: insertError } = await db
@@ -114,6 +126,7 @@ export async function POST(request) {
     clientEmail: newClientEmail,
     clientPhone: newClientPhone,
     clientAddress: newClientAddress,
+    clientPhotoUrl: resolvedPhotoUrl,
     agent: recordedByName,
     amount: paymentAmount,
     date,

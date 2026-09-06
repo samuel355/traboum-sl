@@ -7,6 +7,8 @@ import { findOrCreateClient } from "@/lib/clients";
 import { generateAllocationPdf } from "@/lib/pdf";
 import { deleteFromR2ByUrl, transferPdfKey, uploadToR2 } from "@/lib/r2";
 import { writeAuditLog } from "@/lib/audit";
+import { saveClientPhotoFromUrl } from "@/lib/client-photo";
+import { DOCUMENTS_TABLE } from "@/lib/clients";
 
 async function authorizeTransfer(transferId, role) {
   const db = supabaseAdmin();
@@ -30,6 +32,11 @@ export async function PATCH(request, { params }) {
   if (authorized.response) return authorized.response;
   const { db, transfer } = authorized;
   const body = await request.json();
+  const plotId = String(body.plotId || transfer.plot_id);
+  const plotNumber = String(body.plotNumber || "").trim();
+  const streetName = String(body.streetName || "").trim();
+  const oldAllocationFileUrl = String(body.oldAllocationFileUrl || transfer.old_allocation_file_url || "");
+  const clientPhotoUrl = String(body.clientPhotoUrl || "");
   const name = String(body.name || "").trim();
   const phone = String(body.phone || "").trim();
   const email = String(body.email || "").trim();
@@ -38,22 +45,39 @@ export async function PATCH(request, { params }) {
   const paymentMethod = String(body.method || "").trim();
   const paymentReference = String(body.reference || "").trim();
 
-  if (!name || !phone || !Number.isFinite(paymentAmount) || paymentAmount <= 0 || !paymentMethod) {
-    return NextResponse.json({ error: "Name, phone, positive payment amount, and payment method are required" }, { status: 400 });
+  const publicR2Base = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+  if (!plotId || !name || !phone || !Number.isFinite(paymentAmount) || paymentAmount <= 0 || !paymentMethod || !oldAllocationFileUrl) {
+    return NextResponse.json({ error: "Plot, name, phone, positive payment amount, payment method, and old allocation document are required" }, { status: 400 });
+  }
+  if (publicR2Base && !oldAllocationFileUrl.startsWith(`${publicR2Base}/transfers/`)) {
+    return NextResponse.json({ error: "Invalid old allocation document" }, { status: 400 });
+  }
+  if (!String(plotId).startsWith("manual-")) {
+    const { data: plot } = await db.from(PLOT_TABLE).select("owner").eq("id", plotId).maybeSingle();
+    if (!plot || !canManagePlot(role, plot, "transfer")) {
+      return NextResponse.json({ error: "The selected plot cannot be used for this transfer" }, { status: 403 });
+    }
   }
 
   const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
   let clientId;
   try {
     clientId = await findOrCreateClient(db, { name, phone, email, address, userId: user.id, userName: actorName });
+    if (clientPhotoUrl) await saveClientPhotoFromUrl(db, clientId, clientPhotoUrl, user.id, actorName);
   } catch (error) {
     console.error("Failed to find/create edited transfer client", error);
     return NextResponse.json({ error: "Failed to save client details" }, { status: 500 });
   }
 
+  let resolvedPhotoUrl = clientPhotoUrl || null;
+  if (!resolvedPhotoUrl) {
+    const { data: existingPhoto } = await db.from(DOCUMENTS_TABLE).select("file_url").eq("client_id", clientId).eq("doc_type", "passport_photo").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    resolvedPhotoUrl = existingPhoto?.file_url || null;
+  }
+
   const date = new Date();
   const referenceNumber = `TSL-${String(transfer.id).slice(-8).toUpperCase()}`;
-  const fileNumber = `TSL-${String(transfer.plot_number || "PLOT").replace(/\s+/g, "").toUpperCase()}-${date.getFullYear()}`;
+  const fileNumber = `TSL-${String(plotNumber || "PLOT").replace(/\s+/g, "").toUpperCase()}-${date.getFullYear()}`;
   let pdfBuffer;
   try {
     pdfBuffer = await generateAllocationPdf({
@@ -61,12 +85,13 @@ export async function PATCH(request, { params }) {
       referenceNumber,
       fileNumber,
       allocationDate: transfer.recorded_at || date.toISOString(),
-      plotNumber: transfer.plot_number,
-      streetName: transfer.street_name,
+      plotNumber,
+      streetName,
       clientName: name,
       clientEmail: email,
       clientPhone: phone,
       clientAddress: address,
+      clientPhotoUrl: resolvedPhotoUrl,
       agent: transfer.recorded_by_name || actorName,
       amount: paymentAmount,
       date,
@@ -88,6 +113,9 @@ export async function PATCH(request, { params }) {
     .from("tsl_transfers")
     .update({
       client_id: clientId,
+      plot_id: plotId,
+      plot_number: plotNumber,
+      street_name: streetName || null,
       new_client_name: name,
       new_client_email: email || null,
       new_client_phone: phone,
@@ -96,6 +124,7 @@ export async function PATCH(request, { params }) {
       payment_method: paymentMethod,
       payment_reference: paymentReference || null,
       pdf_url: pdfUrl,
+      old_allocation_file_url: oldAllocationFileUrl,
     })
     .eq("id", transfer.id)
     .select()
@@ -112,7 +141,7 @@ export async function PATCH(request, { params }) {
     action: "transfer.updated",
     entityType: "tsl_transfers",
     entityId: transfer.id,
-    metadata: { plotId: transfer.plot_id, plotNumber: transfer.plot_number, newClientName: name, paymentAmount, paymentMethod },
+    metadata: { plotId, plotNumber, newClientName: name, paymentAmount, paymentMethod },
   });
 
   return NextResponse.json({ transfer: updated });
