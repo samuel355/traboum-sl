@@ -50,30 +50,33 @@ export function TransferForm({ plots, defaultFee, preselectedPlotId }) {
 
   async function onSubmit(e) {
     e.preventDefault();
-    if (!file) return setError("Upload the old allocation document before continuing.");
-    if (!form.method) return setError("Select a payment method before continuing.");
-    setState("submitting");
-    setError(null);
-    const fd = new FormData();
-    fd.set("plotId", selectedPlot.id);
-    fd.set("plotNumber", selectedPlot.plotNumber || "");
-    fd.set("streetName", selectedPlot.streetName || "");
-    fd.set("newClientName", form.name);
-    fd.set("newClientEmail", form.email);
-    fd.set("newClientPhone", form.phone);
-    fd.set("newClientAddress", form.address);
-    fd.set("paymentAmount", form.amount);
-    fd.set("paymentMethod", form.method);
-    fd.set("paymentReference", form.reference);
-    fd.set("oldAllocationFile", file);
     try {
+      if (!selectedPlot?.id) throw new Error("Choose a plot before recording the transfer.");
+      if (!(file instanceof File) || file.size === 0) throw new Error("Upload the old allocation document before continuing.");
+      if (!form.method) throw new Error("Select a payment method before continuing.");
+
+      setState("submitting");
+      setError(null);
+      const fd = new FormData();
+      fd.set("plotId", String(selectedPlot.id));
+      fd.set("plotNumber", String(selectedPlot.plotNumber || ""));
+      fd.set("streetName", String(selectedPlot.streetName || ""));
+      fd.set("newClientName", String(form.name || ""));
+      fd.set("newClientEmail", String(form.email || ""));
+      fd.set("newClientPhone", String(form.phone || ""));
+      fd.set("newClientAddress", String(form.address || ""));
+      fd.set("paymentAmount", String(form.amount || ""));
+      fd.set("paymentMethod", String(form.method || ""));
+      fd.set("paymentReference", String(form.reference || ""));
+      fd.set("oldAllocationFile", file);
+
       const res = await fetch("/api/transfers", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to record transfer");
       setResult(data);
       setState("done");
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Failed to record transfer");
       setState("error");
     }
   }
