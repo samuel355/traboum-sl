@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { canManagePlot, PLOT_TABLE } from "@/lib/plots";
 import { findOrCreateClient } from "@/lib/clients";
 import { generateAllocationPdf } from "@/lib/pdf";
-import { transferOldDocKey, transferPdfKey, uploadToR2 } from "@/lib/r2";
+import { transferPdfKey, uploadToR2 } from "@/lib/r2";
 import { notifyEmails } from "@/lib/email";
 import { notifyPhones } from "@/lib/sms";
 import { writeAuditLog } from "@/lib/audit";
@@ -28,9 +28,19 @@ export async function POST(request) {
   const paymentAmount = Number(form.get("paymentAmount"));
   const paymentMethod = form.get("paymentMethod");
   const paymentReference = form.get("paymentReference");
-  const oldFile = form.get("oldAllocationFile");
+  const oldFileUrl = form.get("oldAllocationFileUrl");
+  const publicR2Base = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
 
-  if (!plotId || !newClientName || !newClientPhone || !paymentAmount || !paymentMethod || !oldFile || !oldFile.size) {
+  if (
+    !plotId ||
+    !newClientName ||
+    !newClientPhone ||
+    !paymentAmount ||
+    !paymentMethod ||
+    !oldFileUrl ||
+    !publicR2Base ||
+    !String(oldFileUrl).startsWith(`${publicR2Base}/transfers/`)
+  ) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -88,18 +98,6 @@ export async function POST(request) {
   if (insertError) {
     console.error("Failed to insert transfer", insertError);
     return NextResponse.json({ error: "Failed to record transfer" }, { status: 500 });
-  }
-
-  let oldFileUrl = null;
-  try {
-    const oldBuffer = Buffer.from(await oldFile.arrayBuffer());
-    oldFileUrl = await uploadToR2(
-      oldBuffer,
-      transferOldDocKey(transfer.id, oldFile.name),
-      oldFile.type || "application/octet-stream",
-    );
-  } catch (err) {
-    console.error("Failed to upload old allocation file", err);
   }
 
   const date = new Date();
