@@ -2,17 +2,12 @@
 
 import { useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { plotNumber, streetName } from "@/lib/plots";
+import { OWNER_OPTIONS, plotNumber, streetName } from "@/lib/plots";
 
 const FIELD_CLASS =
   "w-full rounded-lg border border-navy-100 px-3.5 py-2.5 text-sm text-navy-900 outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 const SELECT_CLASS =
   "h-11 w-full rounded-lg border border-navy-100 bg-white px-3.5 text-sm text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
-
-const OWNER_OPTIONS = [
-  { value: "tsl", label: "Trabuom Stool Lands" },
-  { value: "lhc", label: "GetOnePlot (Company)" },
-];
 
 const STATUS_OPTIONS = ["Available", "Reserved", "Sold", "On Hold"];
 

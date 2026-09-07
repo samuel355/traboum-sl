@@ -1,7 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { can, getEffectiveRole, ROLES } from "@/lib/roles";
-import { fetchAllPlots, formatPlotSize, getPolygonPath, plotNumber, plotOwner, plotStatus, statusKey, streetName } from "@/lib/plots";
+import { can, getEffectiveRole } from "@/lib/roles";
+import { canManagePlot, fetchAllPlots, formatPlotSize, plotNumber, plotStatus, statusKey, streetName } from "@/lib/plots";
 import { TransferForm } from "@/components/TransferForm";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +12,7 @@ export default async function NewTransferPage({ searchParams }) {
   if (!can(role, "transfer")) redirect("/dashboard/transfers");
 
   const allPlots = await fetchAllPlots().catch(() => []);
-  const manageablePlots =
-    role === ROLES.SYSADMIN ? allPlots : allPlots.filter((plot) => plotOwner(plot) === "tsl");
+  const manageablePlots = allPlots.filter((plot) => canManagePlot(role, plot, "transfer"));
   const soldPlots = manageablePlots
     .filter((plot) => statusKey(plotStatus(plot)) === "sold")
     .map((plot) => ({

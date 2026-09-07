@@ -22,6 +22,7 @@ import {
   getPlotStyle,
   getPolygonCenter,
   getPolygonPath,
+  OWNER_OPTIONS,
   ownerLabel,
   plotNumber,
   plotOwner,
@@ -56,9 +57,9 @@ const labelPixelOffset = (width, height) => ({ x: -width / 2, y: -height / 2 });
 
 function useStats(plots) {
   return useMemo(() => {
-    const stoolLandPlots = plots.filter((plot) => plotOwner(plot) === "tsl");
-    const base = { total: stoolLandPlots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
-    stoolLandPlots.forEach((plot) => {
+    const managedPlots = plots.filter((plot) => plotOwner(plot) !== "lhc");
+    const base = { total: managedPlots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
+    managedPlots.forEach((plot) => {
       const key = statusKey(plotStatus(plot));
       if (key in base) base[key] += 1;
     });
@@ -244,8 +245,7 @@ export function DashboardMapView({ plots, loadError, role }) {
           ]} />
           <FilterSelect value={filterOwner} onChange={setFilterOwner} options={[
             ["all", "All owners"],
-            ["tsl", "Trabuom Stool Lands"],
-            ["lhc", "GetOnePlot (Company)"],
+            ...OWNER_OPTIONS.map(({ value, label }) => [value, label]),
           ]} />
           {filterQuery || filterStatus !== "all" || filterOwner !== "all" ? (
             <button

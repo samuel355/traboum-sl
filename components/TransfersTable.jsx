@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import { Edit3, Search, Trash2 } from "lucide-react";
 import { ViewDocumentButton } from "./ViewDocumentButton";
+import { TransferEditModal } from "./TransferEditModal";
 
-export function TransfersTable({ transfers }) {
+export function TransfersTable({ transfers, plots }) {
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -23,23 +23,7 @@ export function TransfersTable({ transfers }) {
 
   function startEdit(row) {
     setEditing(row);
-    setForm({ name: row.new_client_name || "", email: row.new_client_email || "", phone: row.new_client_phone || "", address: row.new_client_address || "", amount: row.payment_amount || "", method: row.payment_method || "", reference: row.payment_reference || "" });
     setError("");
-  }
-
-  async function saveEdit(e) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      const response = await fetch(`/api/transfers/${editing.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to update transfer");
-      window.location.reload();
-    } catch (err) {
-      setError(err.message);
-      setSaving(false);
-    }
   }
 
   async function deleteTransfer(row) {
@@ -132,27 +116,7 @@ export function TransfersTable({ transfers }) {
           </table>
         )}
       </div>
-      {editing && form ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/50 p-4">
-          <form onSubmit={saveEdit} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
-            <h2 className="text-lg font-bold text-navy-900">Edit transfer</h2>
-            <p className="mt-1 text-sm text-navy-500">The transfer document will be regenerated with the corrected details.</p>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {[
-                ["name", "New allottee name"], ["phone", "Phone number"], ["email", "Email"], ["address", "Address"],
-                ["amount", "Amount paid"], ["method", "Payment method"], ["reference", "Payment reference"],
-              ].map(([field, label]) => (
-                <label key={field} className={field === "address" ? "sm:col-span-2" : ""}>
-                  <span className="mb-1.5 block text-sm font-medium text-navy-700">{label}</span>
-                  {field === "address" ? <textarea rows={3} className="w-full rounded-xl border border-navy-100 px-3 py-2.5 text-sm" value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} /> : field === "method" ? <select className="w-full rounded-xl border border-navy-100 px-3 py-2.5 text-sm" value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })}><option value="">Select payment method</option><option value="cash">Cash</option><option value="mobile_money">Mobile Money</option><option value="bank">Bank transfer</option><option value="other">Other</option></select> : <input type={field === "amount" ? "number" : field === "email" ? "email" : "text"} min={field === "amount" ? "0" : undefined} step={field === "amount" ? "0.01" : undefined} className="w-full rounded-xl border border-navy-100 px-3 py-2.5 text-sm" value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} />}
-                </label>
-              ))}
-            </div>
-            {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-600">{error}</p> : null}
-            <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setEditing(null)} className="rounded-xl border border-navy-200 px-4 py-2.5 text-sm font-semibold text-navy-700">Cancel</button><button type="submit" disabled={saving} className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-navy-950 disabled:opacity-60">{saving ? "Saving…" : "Save changes"}</button></div>
-          </form>
-        </div>
-      ) : null}
+      {editing ? <TransferEditModal transfer={editing} plots={plots} onClose={() => setEditing(null)} onSaved={() => window.location.reload()} /> : null}
     </div>
   );
 }

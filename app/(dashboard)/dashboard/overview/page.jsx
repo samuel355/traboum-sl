@@ -19,9 +19,9 @@ export default async function OverviewPage() {
       db.from("tsl_audit_log").select("*").order("created_at", { ascending: false }).limit(8),
     ]);
 
-  const stoolLandPlots = plots.filter((plot) => plotOwner(plot) === "tsl");
-  const plotStats = { total: stoolLandPlots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
-  stoolLandPlots.forEach((plot) => {
+  const managedPlots = plots.filter((plot) => plotOwner(plot) !== "lhc");
+  const plotStats = { total: managedPlots.length, available: 0, reserved: 0, sold: 0, hold: 0 };
+  managedPlots.forEach((plot) => {
     const key = statusKey(plotStatus(plot));
     if (key in plotStats) plotStats[key] += 1;
   });

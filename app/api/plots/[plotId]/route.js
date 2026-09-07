@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE, PLOT_TABLE, plotNumber, streetName } from "@/lib/plots";
 import { writeAuditLog } from "@/lib/audit";
 
-const VALID_OWNERS = ["tsl", "lhc", null];
+const VALID_OWNERS = ["tsl", "lhc", "family", null];
 const VALID_STATUSES = ["Available", "Reserved", "Sold", "On Hold"];
 
 function normalizeOwnerValue(value) {
@@ -81,7 +81,7 @@ export async function PATCH(request, { params }) {
     if (typeof normalizedOwner !== "string" || !normalizedOwner.length) {
       return NextResponse.json({ error: "Invalid owner" }, { status: 400 });
     }
-    if (!VALID_OWNERS.includes(normalizedOwner) && !body.owner) {
+    if (!VALID_OWNERS.includes(normalizedOwner)) {
       return NextResponse.json({ error: "Invalid owner" }, { status: 400 });
     }
     updates.owner = normalizedOwner;

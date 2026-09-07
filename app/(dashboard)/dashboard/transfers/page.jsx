@@ -4,12 +4,23 @@ import { Plus } from "lucide-react";
 import { can, getEffectiveRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { TransfersTable } from "@/components/TransfersTable";
+import { canManagePlot, fetchAllPlots, formatPlotSize, plotNumber, plotStatus, statusKey, streetName } from "@/lib/plots";
 
 export const dynamic = "force-dynamic";
 
 export default async function TransfersPage() {
   const user = await currentUser();
   const role = getEffectiveRole(user);
+  const allPlots = await fetchAllPlots().catch(() => []);
+  const manageablePlots = allPlots.filter((plot) => canManagePlot(role, plot, "transfer"));
+  const soldPlots = manageablePlots.filter((plot) => statusKey(plotStatus(plot)) === "sold").map((plot) => ({
+    id: plot.id,
+    plotNumber: plotNumber(plot),
+    streetName: streetName(plot),
+    plotSize: formatPlotSize(plot),
+    currentClientName: plot.currentClientName,
+    geometry: plot.geometry,
+  }));
 
   const { data: transfers, error } = await supabaseAdmin()
     .from("tsl_transfers")
@@ -43,7 +54,7 @@ export default async function TransfersPage() {
             Couldn&apos;t load transfers: {error.message}
           </p>
         ) : (
-          <TransfersTable transfers={transfers ?? []} />
+          <TransfersTable transfers={transfers ?? []} plots={soldPlots} />
         )}
       </div>
     </div>
