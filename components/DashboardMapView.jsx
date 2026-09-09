@@ -123,6 +123,12 @@ export function DashboardMapView({ plots, loadError, role }) {
     router.refresh();
   }
 
+  function handleGenerateAllocation(updates) {
+    setSelected((prev) => (prev && prev.id === editingPlot.id ? { ...prev, ...updates } : prev));
+    setEditingPlot(null);
+    router.push(`/dashboard/allocate/${updates.id}`);
+  }
+
   const { isLoaded, loadError: mapsLoadError } = useJsApiLoader({
     id: "tsl-google-map",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
@@ -453,7 +459,12 @@ export function DashboardMapView({ plots, loadError, role }) {
       </div>
 
       {editingPlot ? (
-        <EditPlotModal plot={editingPlot} onClose={() => setEditingPlot(null)} onSaved={handlePlotSaved} />
+        <EditPlotModal
+          plot={editingPlot}
+          onClose={() => setEditingPlot(null)}
+          onSaved={handlePlotSaved}
+          onGenerateAllocation={handleGenerateAllocation}
+        />
       ) : null}
       {viewingPlotId ? (
         <PlotDetailsModal plotId={viewingPlotId} onClose={() => setViewingPlotId(null)} role={role} />

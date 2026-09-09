@@ -1,7 +1,8 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { can, getEffectiveRole } from "@/lib/roles";
-import { canManagePlot, fetchPlotById, plotAssignee, plotNumber, plotStatus, statusKey, streetName } from "@/lib/plots";
+import { supabaseAdmin } from "@/lib/supabase";
+import { ALLOCATIONS_TABLE, canManagePlot, fetchPlotById, PLOT_TABLE, plotAssignee, plotNumber, plotStatus, statusKey, streetName } from "@/lib/plots";
 import { AllocationForm } from "@/components/AllocationForm";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,16 @@ export default async function AllocatePlotPage({ params }) {
   }
 
   const plotStatusKey = statusKey(plotStatus(plot));
-  if (plotStatusKey !== "available" && plotStatusKey !== "reserved") {
+  const assignee = plotAssignee(plot);
+  const { data: existingAllocation } = await supabaseAdmin()
+    .from(ALLOCATIONS_TABLE)
+    .select("id")
+    .eq("plot_table", PLOT_TABLE)
+    .eq("plot_id", String(plot.id))
+    .limit(1)
+    .maybeSingle();
+  const canAllocatePendingSoldPlot = plotStatusKey === "sold" && Boolean(assignee.id) && !existingAllocation;
+  if (plotStatusKey !== "available" && plotStatusKey !== "reserved" && !canAllocatePendingSoldPlot) {
     redirect("/dashboard");
   }
   if (!canManagePlot(role, plot, "allocate")) {
@@ -27,7 +37,6 @@ export default async function AllocatePlotPage({ params }) {
   }
 
   const agentName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
-  const assignee = plotAssignee(plot);
 
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 md:p-10">

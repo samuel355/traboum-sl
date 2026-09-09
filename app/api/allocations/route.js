@@ -48,7 +48,7 @@ export async function POST(request) {
   // against the live row before writing anything.
   const { data: plotRow, error: plotFetchError } = await db
     .from(PLOT_TABLE)
-    .select("owner, status")
+    .select("owner, status, properties")
     .eq("id", plotId)
     .single();
 
@@ -59,7 +59,26 @@ export async function POST(request) {
     return NextResponse.json({ error: "This plot isn't managed by Trabuom Stool Lands" }, { status: 403 });
   }
   const currentStatusKey = statusKey(plotRow.status);
-  if (currentStatusKey !== "available" && currentStatusKey !== "reserved") {
+  const { data: existingAllocation, error: existingAllocationError } = await db
+    .from(ALLOCATIONS_TABLE)
+    .select("id")
+    .eq("plot_table", PLOT_TABLE)
+    .eq("plot_id", String(plotId))
+    .limit(1)
+    .maybeSingle();
+  if (existingAllocationError) {
+    console.error("Failed to check existing allocation", existingAllocationError);
+    return NextResponse.json({ error: "Failed to verify plot allocation status" }, { status: 500 });
+  }
+  if (existingAllocation) {
+    return NextResponse.json({ error: "This plot has already been allocated" }, { status: 409 });
+  }
+  const hasPendingAssignee = Boolean(plotRow.properties?.assignedClientId);
+  if (
+    currentStatusKey !== "available" &&
+    currentStatusKey !== "reserved" &&
+    !(currentStatusKey === "sold" && hasPendingAssignee)
+  ) {
     return NextResponse.json({ error: "This plot is no longer available" }, { status: 409 });
   }
 

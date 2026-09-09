@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { OWNER_OPTIONS, plotAssignee, plotNumber, streetName } from "@/lib/plots";
 
@@ -12,8 +11,7 @@ const SELECT_CLASS =
 
 const STATUS_OPTIONS = ["Available", "Reserved", "Sold", "On Hold"];
 
-export function EditPlotModal({ plot, onClose, onSaved }) {
-  const router = useRouter();
+export function EditPlotModal({ plot, onClose, onSaved, onGenerateAllocation }) {
   const initialPlotNumber =
     plot.plotNumber ??
     plot.properties?.plotNumber ??
@@ -64,9 +62,10 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update plot");
-      onSaved(data.plot);
       if (generateAllocation) {
-        router.push(`/dashboard/allocate/${plot.id}`);
+        onGenerateAllocation(data.plot);
+      } else {
+        onSaved(data.plot);
       }
     } catch (err) {
       setError(err.message);
