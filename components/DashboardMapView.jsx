@@ -306,13 +306,14 @@ export function DashboardMapView({ plots, loadError, role }) {
               if (path.length < 3) return null;
               const style = getPlotStyle(plot);
               const isSelected = selected?.id === plot.id;
+              const isReserved = statusKey(plotStatus(plot)) === "reserved";
               return (
                 <Polygon
                   key={plot.id}
                   path={path}
                   options={{
                     fillColor: style.fill,
-                    fillOpacity: isSelected ? 0.65 : 0.4,
+                    fillOpacity: isReserved ? (isSelected ? 0.9 : 0.8) : isSelected ? 0.65 : 0.4,
                     strokeColor: isSelected ? "#0B0E2D" : style.stroke,
                     strokeWeight: isSelected ? 3 : 1.5,
                     clickable: true,
