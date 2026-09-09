@@ -75,6 +75,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
   const [deleteState, setDeleteState] = useState("idle");
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [statusError, setStatusError] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -170,6 +171,34 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
       setStatusError(err.message);
     } finally {
       setUpdatingStatusId(null);
+    }
+  }
+
+  async function generateAndPrint(allocation) {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      setStatusError("Allow pop-ups to generate and print the allocation.");
+      return;
+    }
+
+    setPrintingId(allocation.id);
+    setStatusError(null);
+    try {
+      const res = await fetch(`/api/allocations/${allocation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateDocument: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate allocation document");
+      if (!data.allocation?.pdf_url) throw new Error("Allocation document could not be generated");
+      printWindow.location.href = data.allocation.pdf_url;
+      router.refresh();
+    } catch (err) {
+      printWindow.close();
+      setStatusError(err.message);
+    } finally {
+      setPrintingId(null);
     }
   }
 
@@ -292,6 +321,17 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       {canManage ? (
+                        <button
+                          type="button"
+                          onClick={() => generateAndPrint(row)}
+                          disabled={printingId === row.id}
+                          className={PILL_GHOST}
+                        >
+                          {printingId === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Printer className="h-3 w-3" />}
+                          Print
+                        </button>
+                      ) : null}
+                      {canManage ? (
                         <button onClick={() => setEditingAllocation(row)} className={PILL_GHOST}>
                           <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -325,6 +365,7 @@ export function AllocationsTable({ allocations, canManage, canDelete }) {
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-navy-50 pt-3">
                   {row.pdf_url ? <ViewDocumentButton url={`${row.pdf_url}${row.updated_at ? `?v=${encodeURIComponent(row.updated_at)}` : ""}`} title={`Allocation — Plot ${row.plot_number}`} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-50" /> : null}
+                  {canManage ? <button type="button" onClick={() => generateAndPrint(row)} disabled={printingId === row.id} className={PILL_GHOST}>{printingId === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Printer className="h-3 w-3" />} Print</button> : null}
                   {canManage ? <button onClick={() => setEditingAllocation(row)} className={PILL_GHOST}><Pencil className="h-3 w-3" /> Edit</button> : null}
                   {canDelete ? <button onClick={() => setDeletingAllocation(row)} className={PILL_DANGER}><Trash2 className="h-3 w-3" /> Delete</button> : null}
                 </div>

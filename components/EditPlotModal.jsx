@@ -155,7 +155,7 @@ export function EditPlotModal({ plot, onClose, onSaved, onGenerateAllocation }) 
             </p>
             <div className="mt-4 space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-navy-700">Full name</label>
+                <label className="mb-1.5 block text-sm font-medium text-navy-700">Full name (optional)</label>
                 <input className={FIELD_CLASS} value={assignee.name} onChange={updateAssignee("name")} />
               </div>
               <div>

@@ -123,8 +123,8 @@ export async function PATCH(request, { params }) {
     const clientAddress = String(body.clientAddress ?? "").trim();
 
     if (clientName || clientContact || clientAddress) {
-      if (!clientName || !clientContact) {
-        return NextResponse.json({ error: "Client full name and contact are required" }, { status: 400 });
+      if (!clientContact) {
+        return NextResponse.json({ error: "Client contact is required" }, { status: 400 });
       }
 
       let clientId;

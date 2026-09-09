@@ -3,7 +3,13 @@ import { currentUser } from "@clerk/nextjs/server";
 import { can, getEffectiveRole, isAllowedRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE } from "@/lib/plots";
-import { CLIENTS_TABLE, DOCUMENTS_TABLE, RESERVATIONS_TABLE, summarizeClientRecords } from "@/lib/clients";
+import {
+  CLIENTS_TABLE,
+  DOCUMENTS_TABLE,
+  fetchPendingPlotAssignments,
+  RESERVATIONS_TABLE,
+  summarizeClientRecords,
+} from "@/lib/clients";
 import { deleteFromR2ByUrl } from "@/lib/r2";
 import { writeAuditLog } from "@/lib/audit";
 import { saveClientPhoto } from "@/lib/client-photo";
@@ -22,6 +28,7 @@ export async function GET(request, { params }) {
     { data: reservations },
     { data: transfers },
     { data: documents },
+    pendingAssignments,
   ] = await Promise.all([
     db.from(CLIENTS_TABLE).select("*").eq("id", params.clientId).single(),
     db
@@ -44,6 +51,7 @@ export async function GET(request, { params }) {
       .select("*")
       .eq("client_id", params.clientId)
       .order("created_at", { ascending: false }),
+    fetchPendingPlotAssignments(db),
   ]);
 
   if (clientError || !client) {
@@ -54,6 +62,7 @@ export async function GET(request, { params }) {
     allocations: allocations ?? [],
     reservations: reservations ?? [],
     transfers: transfers ?? [],
+    pendingPlots: pendingAssignments.filter((assignment) => String(assignment.clientId) === String(params.clientId)),
   });
 
   return NextResponse.json({
@@ -62,6 +71,7 @@ export async function GET(request, { params }) {
     reservations: reservations ?? [],
     transfers: transfers ?? [],
     documents: documents ?? [],
+    pendingPlots: pendingAssignments.filter((assignment) => String(assignment.clientId) === String(params.clientId)),
     summary,
   });
 }
@@ -141,15 +151,20 @@ export async function DELETE(request, { params }) {
   // Never delete a client with financial history attached — those records
   // (payments, plots) must stay traceable to a real person, matching this
   // app's audit-trail-first philosophy.
-  const [{ count: allocationCount }, { count: reservationCount }, { count: transferCount }] = await Promise.all([
-    db.from(ALLOCATIONS_TABLE).select("id", { count: "exact", head: true }).eq("client_id", params.clientId),
-    db.from(RESERVATIONS_TABLE).select("id", { count: "exact", head: true }).eq("client_id", params.clientId),
-    db.from("tsl_transfers").select("id", { count: "exact", head: true }).eq("client_id", params.clientId),
-  ]);
+  const [{ count: allocationCount }, { count: reservationCount }, { count: transferCount }, pendingAssignments] =
+    await Promise.all([
+      db.from(ALLOCATIONS_TABLE).select("id", { count: "exact", head: true }).eq("client_id", params.clientId),
+      db.from(RESERVATIONS_TABLE).select("id", { count: "exact", head: true }).eq("client_id", params.clientId),
+      db.from("tsl_transfers").select("id", { count: "exact", head: true }).eq("client_id", params.clientId),
+      fetchPendingPlotAssignments(db),
+    ]);
 
-  if ((allocationCount ?? 0) + (reservationCount ?? 0) + (transferCount ?? 0) > 0) {
+  const hasPendingAssignment = pendingAssignments.some(
+    (assignment) => String(assignment.clientId) === String(params.clientId),
+  );
+  if ((allocationCount ?? 0) + (reservationCount ?? 0) + (transferCount ?? 0) > 0 || hasPendingAssignment) {
     return NextResponse.json(
-      { error: "This client has allocations, reservations, or transfers on record and can't be deleted" },
+      { error: "This client has a plot assignment, allocation, reservation, or transfer on record and can't be deleted" },
       { status: 409 },
     );
   }

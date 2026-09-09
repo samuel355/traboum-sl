@@ -189,9 +189,16 @@ export async function POST(request) {
   // Allocation is the point of assignment, not a separate approval step.
   // Keep owner as the controlling organization; the buyer belongs in the
   // allocation/client records and must not replace the inventory owner.
+  // Clear the temporary edit-modal assignment once it has become a formal
+  // allocation, preventing a second allocation from the Sold plot popup.
+  const updatedProperties = { ...(plotRow.properties ?? {}) };
+  delete updatedProperties.assignedClientId;
+  delete updatedProperties.assignedClientName;
+  delete updatedProperties.assignedClientContact;
+  delete updatedProperties.assignedClientAddress;
   const { error: plotUpdateError } = await db
     .from(PLOT_TABLE)
-    .update({ status: "Sold" })
+    .update({ status: "Sold", properties: updatedProperties })
     .eq("id", plotId);
   if (plotUpdateError) {
     console.error("Failed to update plot status", plotUpdateError);

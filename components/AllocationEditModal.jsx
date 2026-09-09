@@ -92,8 +92,8 @@ export function AllocationEditModal({ allocation, onClose, onSaved }) {
             ) : null}
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-navy-700">Client name</label>
-            <input required className={FIELD_CLASS} value={form.clientName} onChange={update("clientName")} />
+            <label className="mb-1.5 block text-sm font-medium text-navy-700">Client name (optional)</label>
+            <input className={FIELD_CLASS} value={form.clientName} onChange={update("clientName")} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Phone number</label>

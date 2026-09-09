@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeftRight,
   Check,
@@ -192,6 +193,29 @@ export function ClientDetailsModal({ clientId, canManage, onClose }) {
                       date={row.created_at}
                       pdfUrl={row.pdf_url}
                     />
+                  ))
+                )}
+              </Section>
+
+              <Section title="Pending allocations" icon={Clock}>
+                {!data.pendingPlots.length ? (
+                  <EmptyRow text="No pending allocations for this client." />
+                ) : (
+                  data.pendingPlots.map((plot) => (
+                    <div
+                      key={plot.plotId}
+                      className="flex items-center justify-between gap-3 border-b border-navy-50 px-4 py-3 last:border-0"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-navy-900">Plot {plot.plotNumber || "—"}</p>
+                        <p className="truncate text-xs text-navy-400">{plot.streetName || "Street not set"}</p>
+                      </div>
+                      {canManage ? (
+                        <Link href={`/dashboard/allocate/${plot.plotId}`} className={PILL_PRIMARY}>
+                          Generate allocation
+                        </Link>
+                      ) : null}
+                    </div>
                   ))
                 )}
               </Section>

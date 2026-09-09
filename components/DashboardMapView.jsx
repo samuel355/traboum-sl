@@ -35,6 +35,7 @@ import { can, ROLES } from "@/lib/roles";
 import { EditPlotModal } from "./EditPlotModal";
 import { PlotDetailsModal } from "./PlotDetailsModal";
 import { PlotListView } from "./PlotListView";
+import { AllocationEditModal } from "./AllocationEditModal";
 
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const MAP_OPTIONS = {
@@ -80,6 +81,7 @@ export function DashboardMapView({ plots, loadError, role }) {
   const [mapType, setMapType] = useState("roadmap");
   const [isMapTypeMenuOpen, setIsMapTypeMenuOpen] = useState(false);
   const [editingPlot, setEditingPlot] = useState(null);
+  const [editingAllocation, setEditingAllocation] = useState(null);
   const [viewingPlotId, setViewingPlotId] = useState(null);
   const [zoom, setZoom] = useState(16);
   const [bounds, setBounds] = useState(null);
@@ -370,6 +372,7 @@ export function DashboardMapView({ plots, loadError, role }) {
                         role={role}
                         onClose={() => setSelected(null)}
                         onEdit={() => setEditingPlot(selected)}
+                        onEditAllocation={setEditingAllocation}
                         onView={() => setViewingPlotId(selected.id)}
                       />
                     </InfoWindow>
@@ -469,6 +472,16 @@ export function DashboardMapView({ plots, loadError, role }) {
       {viewingPlotId ? (
         <PlotDetailsModal plotId={viewingPlotId} onClose={() => setViewingPlotId(null)} role={role} />
       ) : null}
+      {editingAllocation ? (
+        <AllocationEditModal
+          allocation={editingAllocation}
+          onClose={() => setEditingAllocation(null)}
+          onSaved={() => {
+            setEditingAllocation(null);
+            router.refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -530,7 +543,7 @@ export function StatusPill({ status }) {
   );
 }
 
-function PlotCard({ plot, role, onClose, onEdit, onView }) {
+function PlotCard({ plot, role, onClose, onEdit, onEditAllocation, onView }) {
   const status = plotStatus(plot);
   const key = statusKey(status);
   const owner = plotOwner(plot);
@@ -542,6 +555,7 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
   const assignee = plotAssignee(plot);
   const clientName = plot.currentClientName || assignee.name;
   const clientContact = assignee.contact;
+  const allocation = plot.currentAllocation;
 
   return (
     <div className="pointer-events-auto w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-100">
@@ -629,6 +643,39 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
             >
               Reserve plot
             </Link>
+          ) : null}
+
+          {key === "sold" && assignee.id && canManageAllocate ? (
+            <Link
+              href={`/dashboard/allocate/${plot.id}`}
+              className="block w-full rounded-xl bg-amber-400 px-4 py-2.5 text-center text-sm font-bold text-navy-950 shadow-sm transition hover:bg-amber-300"
+            >
+              Generate allocation
+            </Link>
+          ) : null}
+
+          {key === "sold" && allocation ? (
+            <>
+              {allocation.pdf_url ? (
+                <a
+                  href={allocation.pdf_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full rounded-xl border border-navy-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+                >
+                  Print allocation
+                </a>
+              ) : null}
+              {canManageAllocate ? (
+                <button
+                  type="button"
+                  onClick={() => onEditAllocation(allocation)}
+                  className="block w-full rounded-xl border border-navy-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-navy-700 transition hover:bg-navy-50"
+                >
+                  Edit and regenerate allocation
+                </button>
+              ) : null}
+            </>
           ) : null}
 
           {key === "sold" ? (

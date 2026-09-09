@@ -17,6 +17,7 @@ export default async function DashboardPage() {
     plots = allPlots.map((plot) => ({
       ...plot,
       currentClientName: assignees.get(String(plot.id))?.name ?? null,
+      currentAllocation: assignees.get(String(plot.id))?.allocation ?? null,
     }));
   } catch (err) {
     loadError = err.message;

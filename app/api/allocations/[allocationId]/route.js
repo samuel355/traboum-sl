@@ -34,6 +34,7 @@ export async function PATCH(request, { params }) {
   const has = (key) => (body instanceof FormData ? body.has(key) : key in body);
   const get = (key) => (body.get ? body.get(key) : body[key]);
   const updates = {};
+  const regenerateDocument = has("regenerateDocument") && String(get("regenerateDocument")) === "true";
 
   if (has("clientName")) updates.client_name = String(get("clientName") ?? "").trim();
   if (has("clientEmail")) updates.client_email = get("clientEmail") || null;
@@ -97,14 +98,11 @@ export async function PATCH(request, { params }) {
     clientPhotoUrl = existingPhoto?.file_url;
   }
 
-  if ("client_name" in updates && !updates.client_name) {
-    return NextResponse.json({ error: "Client name is required" }, { status: 400 });
-  }
   if ("client_phone" in updates && !updates.client_phone) {
     return NextResponse.json({ error: "Client phone is required" }, { status: 400 });
   }
 
-  if (!Object.keys(updates).length && !(clientPhoto && clientPhoto.size > 0)) {
+  if (!Object.keys(updates).length && !(clientPhoto && clientPhoto.size > 0) && !regenerateDocument) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
@@ -122,7 +120,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "Failed to update allocation" }, { status: 500 });
   }
 
-  const statusOnlyUpdate = Object.keys(updates).length === 1 && "status" in updates;
+  const statusOnlyUpdate = Object.keys(updates).length === 1 && "status" in updates && !regenerateDocument;
   if (statusOnlyUpdate) {
     const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
     await writeAuditLog({
