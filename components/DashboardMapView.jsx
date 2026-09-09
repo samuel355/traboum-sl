@@ -36,6 +36,7 @@ import { EditPlotModal } from "./EditPlotModal";
 import { PlotDetailsModal } from "./PlotDetailsModal";
 import { PlotListView } from "./PlotListView";
 import { AllocationEditModal } from "./AllocationEditModal";
+import { AllocationModal } from "./AllocationModal";
 
 const MAP_CONTAINER_STYLE = { width: "100%", height: "100%" };
 const MAP_OPTIONS = {
@@ -69,7 +70,7 @@ function useStats(plots) {
   }, [plots]);
 }
 
-export function DashboardMapView({ plots, loadError, role }) {
+export function DashboardMapView({ plots, loadError, role, agentName }) {
   const router = useRouter();
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -82,6 +83,7 @@ export function DashboardMapView({ plots, loadError, role }) {
   const [isMapTypeMenuOpen, setIsMapTypeMenuOpen] = useState(false);
   const [editingPlot, setEditingPlot] = useState(null);
   const [editingAllocation, setEditingAllocation] = useState(null);
+  const [allocatingPlot, setAllocatingPlot] = useState(null);
   const [viewingPlotId, setViewingPlotId] = useState(null);
   const [zoom, setZoom] = useState(16);
   const [bounds, setBounds] = useState(null);
@@ -125,10 +127,10 @@ export function DashboardMapView({ plots, loadError, role }) {
     router.refresh();
   }
 
-  function handleGenerateAllocation(updates) {
-    setSelected((prev) => (prev && prev.id === editingPlot.id ? { ...prev, ...updates } : prev));
+  function handleGenerateAllocation(plot) {
+    setSelected(null);
     setEditingPlot(null);
-    router.push(`/dashboard/allocate/${updates.id}`);
+    setAllocatingPlot(plot);
   }
 
   const { isLoaded, loadError: mapsLoadError } = useJsApiLoader({
@@ -373,10 +375,7 @@ export function DashboardMapView({ plots, loadError, role }) {
                         onClose={() => setSelected(null)}
                         onEdit={() => setEditingPlot(selected)}
                         onEditAllocation={setEditingAllocation}
-                        onGenerateAllocation={() => {
-                          setSelected(null);
-                          router.push(`/dashboard/allocate/${selected.id}`);
-                        }}
+                        onGenerateAllocation={() => handleGenerateAllocation(selected)}
                         onView={() => setViewingPlotId(selected.id)}
                       />
                     </InfoWindow>
@@ -484,6 +483,14 @@ export function DashboardMapView({ plots, loadError, role }) {
             setEditingAllocation(null);
             router.refresh();
           }}
+        />
+      ) : null}
+      {allocatingPlot ? (
+        <AllocationModal
+          plot={allocatingPlot}
+          agentName={agentName}
+          onClose={() => setAllocatingPlot(null)}
+          onSaved={() => router.refresh()}
         />
       ) : null}
     </div>

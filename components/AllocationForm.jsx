@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { ViewDocumentButton } from "./ViewDocumentButton";
 import { ClientPhotoField } from "./ClientPhotoField";
+import { DocumentViewerModal } from "./DocumentViewerModal";
 
 const FIELD_CLASS =
   "w-full rounded-xl border border-navy-100 px-3.5 py-3 text-sm text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 
-export function AllocationForm({ plotId, plotNumber, streetName, agentName, initialClient = {} }) {
+export function AllocationForm({ plotId, plotNumber, streetName, agentName, initialClient = {}, onSaved }) {
   const router = useRouter();
   const [form, setForm] = useState({
     name: initialClient.name ?? "",
@@ -23,6 +24,8 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [reviewing, setReviewing] = useState(false);
+  const [printClientName, setPrintClientName] = useState(true);
+  const [viewingDocument, setViewingDocument] = useState(false);
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -38,7 +41,17 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
 
     try {
       const payload = new FormData();
-      Object.entries({ plotId, plotNumber, streetName, clientName: form.name, clientEmail: form.email, clientAddress: form.address, clientPhone: form.phone, amount: form.amount }).forEach(([key, value]) =>
+      Object.entries({
+        plotId,
+        plotNumber,
+        streetName,
+        clientName: form.name,
+        clientEmail: form.email,
+        clientAddress: form.address,
+        clientPhone: form.phone,
+        amount: form.amount,
+        printClientName,
+      }).forEach(([key, value]) =>
         payload.set(key, value ?? ""),
       );
       if (clientPhoto) payload.set("clientPhoto", clientPhoto);
@@ -50,7 +63,9 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create allocation");
       setResult(data);
+      setViewingDocument(Boolean(data.pdfUrl));
       setState("done");
+      onSaved?.(data);
     } catch (err) {
       setError(err.message);
       setState("error");
@@ -101,6 +116,9 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
             <PreviewField label="Address" value={form.address || "—"} />
           </div>
           <p className="mt-4 text-xs text-navy-500">
+            Client name on allocation: <span className="font-semibold text-navy-700">{printClientName ? "Print" : "Leave blank"}</span>
+          </p>
+          <p className="mt-4 text-xs text-navy-500">
             Client photo: <span className="font-semibold text-navy-700">{clientPhoto ? clientPhoto.name : "Not provided"}</span>
           </p>
         </div>
@@ -145,6 +163,13 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
             Back to map
           </button>
         </div>
+        {viewingDocument && result.pdfUrl ? (
+          <DocumentViewerModal
+            url={result.pdfUrl}
+            title={`Allocation — Plot ${plotNumber}`}
+            onClose={() => setViewingDocument(false)}
+          />
+        ) : null}
       </div>
     );
   }
@@ -186,6 +211,20 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
           <label className="mb-1.5 block text-sm font-medium text-navy-700">Address</label>
           <textarea rows={3} className={FIELD_CLASS} value={form.address} onChange={update("address")} />
         </div>
+        <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border border-navy-100 bg-navy-50/60 p-3 text-sm text-navy-700">
+          <input
+            type="checkbox"
+            checked={printClientName}
+            onChange={(e) => setPrintClientName(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-navy-300 text-navy-900 focus:ring-navy-500"
+          />
+          <span>
+            <span className="block font-semibold">Print client name on allocation</span>
+            <span className="mt-0.5 block text-xs text-navy-500">
+              Uncheck this to leave the name area blank for handwritten completion.
+            </span>
+          </span>
+        </label>
         <div className="mt-4"><ClientPhotoField file={clientPhoto} onChange={setClientPhoto} /></div>
       </section>
       <section className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-5">

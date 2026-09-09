@@ -29,6 +29,7 @@ export async function POST(request) {
   const clientPhone = form.get("clientPhone");
   const amount = form.get("amount");
   const clientPhoto = form.get("clientPhoto");
+  const printClientName = form.get("printClientName") !== "false";
   const saleAmount = Number(amount);
 
   if (!plotId || !clientPhone) {
@@ -160,7 +161,7 @@ export async function POST(request) {
     allocationDate: date.toISOString(),
     plotNumber,
     streetName,
-    clientName,
+    clientName: printClientName ? clientName : "",
     clientEmail,
     clientPhone,
     clientAddress,

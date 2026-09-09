@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const user = await currentUser();
   const role = getEffectiveRole(user);
+  const agentName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.username || "Current staff member";
 
   let plots = [];
   let loadError = null;
@@ -23,5 +24,5 @@ export default async function DashboardPage() {
     loadError = err.message;
   }
 
-  return <DashboardMapView plots={plots} loadError={loadError} role={role} />;
+  return <DashboardMapView plots={plots} loadError={loadError} role={role} agentName={agentName} />;
 }
