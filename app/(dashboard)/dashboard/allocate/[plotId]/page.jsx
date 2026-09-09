@@ -1,7 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { can, getEffectiveRole } from "@/lib/roles";
-import { canManagePlot, fetchPlotById, plotNumber, plotStatus, statusKey, streetName } from "@/lib/plots";
+import { canManagePlot, fetchPlotById, plotAssignee, plotNumber, plotStatus, statusKey, streetName } from "@/lib/plots";
 import { AllocationForm } from "@/components/AllocationForm";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +27,7 @@ export default async function AllocatePlotPage({ params }) {
   }
 
   const agentName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
+  const assignee = plotAssignee(plot);
 
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 md:p-10">
@@ -46,6 +47,11 @@ export default async function AllocatePlotPage({ params }) {
           plotNumber={plotNumber(plot)}
           streetName={streetName(plot)}
           agentName={agentName}
+          initialClient={{
+            name: assignee.name,
+            phone: assignee.contact,
+            address: assignee.address,
+          }}
         />
       </div>
     </div>

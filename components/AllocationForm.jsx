@@ -9,9 +9,15 @@ import { ClientPhotoField } from "./ClientPhotoField";
 const FIELD_CLASS =
   "w-full rounded-xl border border-navy-100 px-3.5 py-3 text-sm text-navy-900 outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15";
 
-export function AllocationForm({ plotId, plotNumber, streetName, agentName }) {
+export function AllocationForm({ plotId, plotNumber, streetName, agentName, initialClient = {} }) {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", address: "", phone: "", amount: "" });
+  const [form, setForm] = useState({
+    name: initialClient.name ?? "",
+    email: initialClient.email ?? "",
+    address: initialClient.address ?? "",
+    phone: initialClient.phone ?? "",
+    amount: "",
+  });
   const [clientPhoto, setClientPhoto] = useState(null);
   const [state, setState] = useState("idle"); // idle | submitting | done | error
   const [error, setError] = useState(null);

@@ -3,6 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { can, getEffectiveRole, isAllowedRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE, PLOT_TABLE, plotNumber, streetName } from "@/lib/plots";
+import { findOrCreateClient } from "@/lib/clients";
 import { writeAuditLog } from "@/lib/audit";
 
 const VALID_OWNERS = ["tsl", "lhc", "family", null];
@@ -45,9 +46,8 @@ export async function GET(request, { params }) {
   return NextResponse.json({ plot, allocations: allocations ?? [], transfers: transfers ?? [] });
 }
 
-// Authorized plot-edit endpoint — sets ownership, status, and editable plot
-// metadata. Plot number and street name live in the GIS properties JSON on
-// new_trabuom rather than in standalone database columns.
+// Authorized plot-edit endpoint — sets ownership/status and can save a
+// prospective client before an allocation is formally generated.
 export async function PATCH(request, { params }) {
   const user = await currentUser();
   const role = getEffectiveRole(user);
@@ -75,6 +75,7 @@ export async function PATCH(request, { params }) {
   const auditMetadata = {};
   const properties = { ...(existing.properties ?? {}) };
   let propertiesChanged = false;
+  const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
 
   if ("owner" in body) {
     const normalizedOwner = normalizeOwnerValue(body.owner);
@@ -95,24 +96,38 @@ export async function PATCH(request, { params }) {
     auditMetadata.status = body.status;
   }
 
-  const incomingPlotNumber = "plotNumber" in body ? body.plotNumber : "plot_number" in body ? body.plot_number : undefined;
-  if ("plotNumber" in body || "plot_number" in body) {
-    const trimmed = typeof incomingPlotNumber === "string" ? incomingPlotNumber.trim() : incomingPlotNumber ?? null;
-    const value = trimmed || null;
-    properties.Plot_No = value;
-    if (Object.hasOwn(properties, "plotNumber")) properties.plotNumber = value;
-    auditMetadata.plotNumber = value;
-    propertiesChanged = true;
-  }
+  const includesClientDetails = ["clientName", "clientContact", "clientAddress"].some((key) => key in body);
+  if (includesClientDetails) {
+    const clientName = String(body.clientName ?? "").trim();
+    const clientContact = String(body.clientContact ?? "").trim();
+    const clientAddress = String(body.clientAddress ?? "").trim();
 
-  const incomingStreetName = "streetName" in body ? body.streetName : "street_name" in body ? body.street_name : undefined;
-  if ("streetName" in body || "street_name" in body) {
-    const trimmed = typeof incomingStreetName === "string" ? incomingStreetName.trim() : incomingStreetName ?? null;
-    const value = trimmed || null;
-    properties.Street_Nam = value;
-    if (Object.hasOwn(properties, "streetName")) properties.streetName = value;
-    auditMetadata.streetName = value;
-    propertiesChanged = true;
+    if (clientName || clientContact || clientAddress) {
+      if (!clientName || !clientContact) {
+        return NextResponse.json({ error: "Client full name and contact are required" }, { status: 400 });
+      }
+
+      let clientId;
+      try {
+        clientId = await findOrCreateClient(db, {
+          name: clientName,
+          phone: clientContact,
+          address: clientAddress,
+          userId: user.id,
+          userName: actorName,
+        });
+      } catch (clientError) {
+        console.error("Failed to save plot client", params.plotId, clientError);
+        return NextResponse.json({ error: "Failed to save client details" }, { status: 500 });
+      }
+
+      properties.assignedClientId = clientId;
+      properties.assignedClientName = clientName;
+      properties.assignedClientContact = clientContact;
+      properties.assignedClientAddress = clientAddress || null;
+      auditMetadata.assignedClientName = clientName;
+      propertiesChanged = true;
+    }
   }
 
   if (propertiesChanged) updates.properties = properties;
@@ -136,7 +151,6 @@ export async function PATCH(request, { params }) {
   auditMetadata.plotNumber = plotNumber(data) || "—";
   auditMetadata.streetName = streetName(data) || "—";
 
-  const actorName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
   await writeAuditLog({
     actorId: user.id,
     actorName,
