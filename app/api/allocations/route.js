@@ -215,7 +215,7 @@ export async function POST(request) {
     metadata: { plotId, plotNumber, streetName, clientName, clientPhone },
   });
 
-  await Promise.allSettled([
+  void Promise.allSettled([
     notifyEmails({
       subject: `Plot ${plotNumber} allocated — Trabuom Stool Lands`,
       templateData: {
