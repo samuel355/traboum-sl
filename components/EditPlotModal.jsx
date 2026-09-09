@@ -27,6 +27,8 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
   const initialAssignee = plotAssignee(plot);
 
   const [owner, setOwner] = useState(plot.owner ?? "tsl");
+  const [plotNumberValue, setPlotNumberValue] = useState(String(initialPlotNumber ?? ""));
+  const [streetNameValue, setStreetNameValue] = useState(String(initialStreetName ?? ""));
   const [status, setStatus] = useState(plot.status ?? "Available");
   const [assignee, setAssignee] = useState({
     name: initialAssignee.name,
@@ -46,6 +48,8 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
     const updates = {
       owner: owner || null,
       status,
+      plotNumber: plotNumberValue.trim() || null,
+      streetName: streetNameValue.trim() || null,
       clientName: assignee.name.trim(),
       clientContact: assignee.contact.trim(),
       clientAddress: assignee.address.trim(),
@@ -96,9 +100,10 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Plot number</label>
             <input
               type="text"
-              value={String(initialPlotNumber ?? "")}
-              disabled
-              className={`${FIELD_CLASS} disabled:cursor-not-allowed disabled:bg-navy-50 disabled:text-navy-500`}
+              value={plotNumberValue}
+              onChange={(e) => setPlotNumberValue(e.target.value)}
+              className={FIELD_CLASS}
+              placeholder="e.g. 12A"
             />
           </div>
 
@@ -106,9 +111,10 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
             <label className="mb-1.5 block text-sm font-medium text-navy-700">Street name</label>
             <input
               type="text"
-              value={String(initialStreetName ?? "")}
-              disabled
-              className={`${FIELD_CLASS} disabled:cursor-not-allowed disabled:bg-navy-50 disabled:text-navy-500`}
+              value={streetNameValue}
+              onChange={(e) => setStreetNameValue(e.target.value)}
+              className={FIELD_CLASS}
+              placeholder="e.g. Main Street"
             />
           </div>
 

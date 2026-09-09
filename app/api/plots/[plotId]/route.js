@@ -96,6 +96,26 @@ export async function PATCH(request, { params }) {
     auditMetadata.status = body.status;
   }
 
+  const incomingPlotNumber = "plotNumber" in body ? body.plotNumber : "plot_number" in body ? body.plot_number : undefined;
+  if ("plotNumber" in body || "plot_number" in body) {
+    const trimmed = typeof incomingPlotNumber === "string" ? incomingPlotNumber.trim() : incomingPlotNumber ?? null;
+    const value = trimmed || null;
+    properties.Plot_No = value;
+    if (Object.hasOwn(properties, "plotNumber")) properties.plotNumber = value;
+    auditMetadata.plotNumber = value;
+    propertiesChanged = true;
+  }
+
+  const incomingStreetName = "streetName" in body ? body.streetName : "street_name" in body ? body.street_name : undefined;
+  if ("streetName" in body || "street_name" in body) {
+    const trimmed = typeof incomingStreetName === "string" ? incomingStreetName.trim() : incomingStreetName ?? null;
+    const value = trimmed || null;
+    properties.Street_Nam = value;
+    if (Object.hasOwn(properties, "streetName")) properties.streetName = value;
+    auditMetadata.streetName = value;
+    propertiesChanged = true;
+  }
+
   const includesClientDetails = ["clientName", "clientContact", "clientAddress"].some((key) => key in body);
   if (includesClientDetails) {
     const clientName = String(body.clientName ?? "").trim();
