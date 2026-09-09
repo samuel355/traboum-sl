@@ -373,6 +373,10 @@ export function DashboardMapView({ plots, loadError, role }) {
                         onClose={() => setSelected(null)}
                         onEdit={() => setEditingPlot(selected)}
                         onEditAllocation={setEditingAllocation}
+                        onGenerateAllocation={() => {
+                          setSelected(null);
+                          router.push(`/dashboard/allocate/${selected.id}`);
+                        }}
                         onView={() => setViewingPlotId(selected.id)}
                       />
                     </InfoWindow>
@@ -543,7 +547,7 @@ export function StatusPill({ status }) {
   );
 }
 
-function PlotCard({ plot, role, onClose, onEdit, onEditAllocation, onView }) {
+function PlotCard({ plot, role, onClose, onEdit, onEditAllocation, onGenerateAllocation, onView }) {
   const status = plotStatus(plot);
   const key = statusKey(status);
   const owner = plotOwner(plot);
@@ -646,12 +650,13 @@ function PlotCard({ plot, role, onClose, onEdit, onEditAllocation, onView }) {
           ) : null}
 
           {key === "sold" && assignee.id && canManageAllocate ? (
-            <Link
-              href={`/dashboard/allocate/${plot.id}`}
+            <button
+              type="button"
+              onClick={onGenerateAllocation}
               className="block w-full rounded-xl bg-amber-400 px-4 py-2.5 text-center text-sm font-bold text-navy-950 shadow-sm transition hover:bg-amber-300"
             >
               Generate allocation
-            </Link>
+            </button>
           ) : null}
 
           {key === "sold" && allocation ? (
