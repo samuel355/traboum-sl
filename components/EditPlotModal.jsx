@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { OWNER_OPTIONS, plotAssignee, plotNumber, streetName } from "@/lib/plots";
 
@@ -12,6 +13,7 @@ const SELECT_CLASS =
 const STATUS_OPTIONS = ["Available", "Reserved", "Sold", "On Hold"];
 
 export function EditPlotModal({ plot, onClose, onSaved }) {
+  const router = useRouter();
   const initialPlotNumber =
     plot.plotNumber ??
     plot.properties?.plotNumber ??
@@ -40,8 +42,7 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
 
   const updateAssignee = (field) => (e) => setAssignee((current) => ({ ...current, [field]: e.target.value }));
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function savePlot(generateAllocation = false) {
     setState("submitting");
     setError(null);
 
@@ -64,10 +65,18 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update plot");
       onSaved(data.plot);
+      if (generateAllocation) {
+        router.push(`/dashboard/allocate/${plot.id}`);
+      }
     } catch (err) {
       setError(err.message);
       setState("error");
     }
+  }
+
+  function onSubmit(e) {
+    e.preventDefault();
+    savePlot();
   }
 
   return (
@@ -163,7 +172,7 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex flex-wrap gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
@@ -174,10 +183,18 @@ export function EditPlotModal({ plot, onClose, onSaved }) {
             <button
               type="submit"
               disabled={state === "submitting"}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:opacity-60"
+              className="flex-1 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:opacity-60"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => savePlot(true)}
+              disabled={state === "submitting"}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-navy-950 hover:bg-amber-300 disabled:opacity-60"
             >
               {state === "submitting" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Save
+              Generate allocation
             </button>
           </div>
         </form>

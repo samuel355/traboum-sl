@@ -31,7 +31,7 @@ export async function POST(request) {
   const clientPhoto = form.get("clientPhoto");
   const saleAmount = Number(amount);
 
-  if (!plotId || !clientName || !clientPhone) {
+  if (!plotId || !clientPhone) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
   if (!String(plotNumber || "").trim() || !String(streetName || "").trim()) {

@@ -60,8 +60,8 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
   function onSubmit(e) {
     e.preventDefault();
     if (!reviewing) {
-      if (!form.name.trim() || !form.phone.trim() || !form.amount) {
-        setError("Complete the client name, phone number, and amount before reviewing.");
+      if (!form.phone.trim() || !form.amount) {
+        setError("Complete the phone number and amount before reviewing.");
         setState("error");
         return;
       }
@@ -169,8 +169,8 @@ export function AllocationForm({ plotId, plotNumber, streetName, agentName, init
       <section className="rounded-2xl border border-navy-100 p-4 sm:p-5">
         <p className="mb-4 text-sm font-bold text-navy-900">Client details</p>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-navy-700">Client full name</label>
-          <input required className={FIELD_CLASS} value={form.name} onChange={update("name")} />
+          <label className="mb-1.5 block text-sm font-medium text-navy-700">Client full name (optional)</label>
+          <input className={FIELD_CLASS} value={form.name} onChange={update("name")} />
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
