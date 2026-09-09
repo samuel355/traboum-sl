@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { can } from "@/lib/roles";
-import { formatArea, ownerLabel, plotNumber, plotOwner, plotStatus, streetName } from "@/lib/plots";
+import { formatArea, ownerLabel, plotAssignee, plotNumber, plotOwner, plotStatus, streetName } from "@/lib/plots";
 import { AllocationEditModal } from "./AllocationEditModal";
 import { ViewDocumentButton } from "./ViewDocumentButton";
 
@@ -74,18 +74,7 @@ export function PlotDetailsModal({ plotId, onClose, role }) {
           <p className="mt-6 text-sm text-red-600">{error}</p>
         ) : (
           <>
-            <div className="mt-5 grid grid-cols-2 gap-4 rounded-xl border border-navy-100 bg-navy-50/50 p-4 text-sm">
-              <Field label="Status" value={plotStatus(data.plot)} />
-              <Field label="Owner" value={ownerLabel(plotOwner(data.plot))} />
-              {plotStatus(data.plot).toLowerCase() === "sold" ? (
-                <Field
-                  label="Allocated to"
-                  value={data.transfers[0]?.new_client_name || data.allocations[0]?.client_name || "Client not recorded"}
-                />
-              ) : null}
-              <Field label="Area" value={formatArea(data.plot)} />
-              <Field label="Street" value={streetName(data.plot) || "—"} />
-            </div>
+            <PlotSummary plot={data.plot} allocations={data.allocations} transfers={data.transfers} />
 
             <Section title="Allocation history">
               {!data.allocations.length ? (
@@ -145,6 +134,22 @@ export function PlotDetailsModal({ plotId, onClose, role }) {
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function PlotSummary({ plot, allocations, transfers }) {
+  const assignee = plotAssignee(plot);
+  const clientName = transfers[0]?.new_client_name || allocations[0]?.client_name || assignee.name;
+  const clientContact = transfers[0]?.new_client_phone || allocations[0]?.client_phone || assignee.contact;
+
+  return (
+    <div className="mt-5 grid grid-cols-2 gap-4 rounded-xl border border-navy-100 bg-navy-50/50 p-4 text-sm">
+      <Field label="Status" value={plotStatus(plot)} />
+      <Field label="Owner" value={ownerLabel(plotOwner(plot))} />
+      {clientName ? <Field label="Assigned to" value={[clientName, clientContact].filter(Boolean).join(" · ")} /> : null}
+      <Field label="Area" value={formatArea(plot)} />
+      <Field label="Street" value={streetName(plot) || "—"} />
     </div>
   );
 }

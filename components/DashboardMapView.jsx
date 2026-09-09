@@ -24,6 +24,7 @@ import {
   getPolygonPath,
   OWNER_OPTIONS,
   ownerLabel,
+  plotAssignee,
   plotNumber,
   plotOwner,
   plotStatus,
@@ -527,6 +528,9 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
   const canManageAllocate = canManagePlot(role, plot, "allocate");
   const canManageTransfer = canManagePlot(role, plot, "transfer");
   const canEdit = role === ROLES.SYSADMIN || can(role, "editPlots");
+  const assignee = plotAssignee(plot);
+  const clientName = plot.currentClientName || assignee.name;
+  const clientContact = assignee.contact;
 
   return (
     <div className="pointer-events-auto w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-100">
@@ -574,10 +578,13 @@ function PlotCard({ plot, role, onClose, onEdit, onView }) {
             <p className="text-[10px] uppercase tracking-wide text-slate-400">Owner</p>
             <p className="mt-1 font-semibold text-slate-900">{ownerLabel(owner)}</p>
           </div>
-          {key === "sold" ? (
+          {key === "sold" || clientName ? (
             <div className="col-span-2 rounded-xl border border-amber-100 bg-amber-50 p-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-amber-700">Allocated to</p>
-              <p className="mt-1 font-semibold text-slate-900">{plot.currentClientName || "Client not recorded"}</p>
+              <p className="text-[10px] uppercase tracking-wide text-amber-700">
+                {key === "sold" ? "Allocated to" : "Assigned to"}
+              </p>
+              <p className="mt-1 font-semibold text-slate-900">{clientName || "Client not recorded"}</p>
+              {clientContact ? <p className="mt-0.5 text-xs text-slate-600">{clientContact}</p> : null}
             </div>
           ) : null}
         </div>
