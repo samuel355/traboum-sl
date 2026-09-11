@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { ALLOCATIONS_TABLE, PLOT_TABLE, plotNumber, streetName } from "@/lib/plots";
 import { findOrCreateClient } from "@/lib/clients";
 import { writeAuditLog } from "@/lib/audit";
+import { notifyPhones } from "@/lib/sms";
 
 const VALID_OWNERS = ["tsl", "lhc", "family", null];
 const VALID_STATUSES = ["Available", "Reserved", "Sold", "On Hold"];
@@ -59,7 +60,7 @@ export async function PATCH(request, { params }) {
   const db = supabaseAdmin();
   const { data: existing, error: existingError } = await db
     .from(PLOT_TABLE)
-    .select("id, properties")
+    .select("id, status, properties")
     .eq("id", params.plotId)
     .maybeSingle();
 
@@ -180,6 +181,16 @@ export async function PATCH(request, { params }) {
     entityId: params.plotId,
     metadata: auditMetadata,
   });
+
+  const statusChangedToNotifiableStatus =
+    existing.status !== data.status && (data.status === "Reserved" || data.status === "Sold");
+  if (statusChangedToNotifiableStatus) {
+    const message =
+      data.status === "Reserved"
+        ? `TSL: Plot ${plotNumber(data) || "—"}${streetName(data) ? ` on ${streetName(data)}` : ""} has been reserved by ${actorName}. --Trabuom Stool Lands`
+        : `TSL: Plot ${plotNumber(data) || "—"}${streetName(data) ? ` on ${streetName(data)}` : ""} has been marked sold by ${actorName}. --Trabuom Stool Lands`;
+    void notifyPhones(message);
+  }
 
   return NextResponse.json({ ok: true, plot: data });
 }
