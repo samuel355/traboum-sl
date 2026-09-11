@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { getEffectiveRole, isAllowedRole } from "@/lib/roles";
 import { writeAuditLog } from "@/lib/audit";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function PATCH(request) {
   const user = await currentUser();
@@ -34,24 +35,21 @@ export async function PATCH(request) {
       primaryEmailAddressId = emailAddress.id;
     }
 
-    const currentPhone = user.primaryPhoneNumber?.phoneNumber;
-    let primaryPhoneNumberId = user.primaryPhoneNumberId;
-    if (phone !== currentPhone) {
-      const phoneNumber = await client.phoneNumbers.createPhoneNumber({
-        userId: user.id,
-        phoneNumber: phone,
-        verified: true,
-        primary: true,
-      });
-      primaryPhoneNumberId = phoneNumber.id;
-    }
-
     await client.users.updateUser(user.id, {
       firstName,
       lastName,
       primaryEmailAddressID: primaryEmailAddressId,
-      primaryPhoneNumberID: primaryPhoneNumberId,
     });
+    const { error: staffError } = await supabaseAdmin()
+      .from("tsl_staff")
+      .upsert({
+        clerk_user_id: user.id,
+        role,
+        phone,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      });
+    if (staffError) throw staffError;
 
     await writeAuditLog({
       actorId: user.id,

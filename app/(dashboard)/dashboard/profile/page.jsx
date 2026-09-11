@@ -2,6 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getEffectiveRole, isAllowedRole } from "@/lib/roles";
 import { ProfileForm } from "@/components/ProfileForm";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,11 @@ export default async function ProfilePage() {
   const user = await currentUser();
   const role = getEffectiveRole(user);
   if (!user || !isAllowedRole(role)) redirect("/dashboard");
+  const { data: staff } = await supabaseAdmin()
+    .from("tsl_staff")
+    .select("phone")
+    .eq("clerk_user_id", user.id)
+    .maybeSingle();
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6 md:p-10">
@@ -21,7 +27,7 @@ export default async function ProfilePage() {
             firstName: user.firstName ?? "",
             lastName: user.lastName ?? "",
             email: user.primaryEmailAddress?.emailAddress ?? "",
-            phone: user.primaryPhoneNumber?.phoneNumber ?? "",
+            phone: staff?.phone ?? "",
           }}
         />
       </div>
