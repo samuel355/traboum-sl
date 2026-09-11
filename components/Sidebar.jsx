@@ -72,7 +72,7 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
             <p className="text-[11px] text-navy-300">{roleLabel(role)}</p>
           </div>
         </div>
-        <SignOutAuditButton className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-navy-100 hover:bg-white/10">
+        <SignOutAuditButton className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700">
           <LogOut className="h-3.5 w-3.5" /> Log out
         </SignOutAuditButton>
       </div>

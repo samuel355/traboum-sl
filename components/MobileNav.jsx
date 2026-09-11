@@ -61,7 +61,7 @@ export function MobileNav({ showUsers, showSettings }) {
           );
         })}
         <SignOutAuditButton
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-3 text-sm font-medium text-navy-100 hover:bg-white/10"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-3 text-sm font-semibold text-white hover:bg-red-700"
         >
           <LogOut className="h-4 w-4" /> Log out
         </SignOutAuditButton>
