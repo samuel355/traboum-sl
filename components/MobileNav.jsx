@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { BrandMark } from "./BrandMark";
+import { SignOutAuditButton } from "./SignOutAuditButton";
 
 const NAV = [
   { href: "/dashboard/overview", label: "Dashboard", exact: true },
@@ -13,6 +14,7 @@ const NAV = [
   { href: "/dashboard/transfers", label: "Transfers" },
   { href: "/dashboard/clients", label: "Clients" },
   { href: "/dashboard/audit", label: "Audit Trail" },
+  { href: "/dashboard/profile", label: "My Profile" },
 ];
 
 export function MobileNav({ showUsers, showSettings }) {
@@ -58,6 +60,11 @@ export function MobileNav({ showUsers, showSettings }) {
             </Link>
           );
         })}
+        <SignOutAuditButton
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-3 text-sm font-medium text-navy-100 hover:bg-white/10"
+        >
+          <LogOut className="h-4 w-4" /> Log out
+        </SignOutAuditButton>
         </nav>
       ) : null}
     </div>

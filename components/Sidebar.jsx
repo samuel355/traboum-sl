@@ -7,9 +7,11 @@ import {
   Contact,
   LayoutDashboard,
   Map as MapIcon,
+  LogOut,
   ScrollText,
   Settings,
   ShieldCheck,
+  UserRound,
   Users,
 } from "lucide-react";
 import { roleLabel } from "@/lib/roles";
@@ -23,6 +25,7 @@ const NAV = [
   { href: "/dashboard/transfers", label: "Transfer of Allocation", icon: ArrowLeftRight },
   { href: "/dashboard/clients", label: "Clients", icon: Contact },
   { href: "/dashboard/audit", label: "Audit Trail", icon: ShieldCheck },
+  { href: "/dashboard/profile", label: "My Profile", icon: UserRound },
 ];
 
 export function Sidebar({ role, name, showUsers, showSettings }) {
@@ -59,17 +62,19 @@ export function Sidebar({ role, name, showUsers, showSettings }) {
         })}
       </nav>
 
-      <div className="border-t border-white/10 px-4 py-4 flex items-center gap-3">
-        <SignOutAuditButton
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-navy-950"
-          aria-label="Sign out"
-        >
-          {name?.charAt(0)?.toUpperCase() || "S"}
-        </SignOutAuditButton>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{name || "Staff"}</p>
-          <p className="text-[11px] text-navy-300">{roleLabel(role)}</p>
+      <div className="border-t border-white/10 px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-navy-950">
+            {name?.charAt(0)?.toUpperCase() || "S"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white truncate">{name || "Staff"}</p>
+            <p className="text-[11px] text-navy-300">{roleLabel(role)}</p>
+          </div>
         </div>
+        <SignOutAuditButton className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-navy-100 hover:bg-white/10">
+          <LogOut className="h-3.5 w-3.5" /> Log out
+        </SignOutAuditButton>
       </div>
     </aside>
   );

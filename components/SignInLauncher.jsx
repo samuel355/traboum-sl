@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 // Clerk's inline <SignIn /> widget renders its own (largely unstyleable)
@@ -27,11 +28,19 @@ export function SignInLauncher() {
   const { openSignIn } = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    setRedirecting(true);
+    router.replace("/dashboard");
+  }, [isLoaded, isSignedIn, router]);
 
   function handleClick() {
     if (!isLoaded) return;
     if (isSignedIn) {
-      router.push("/dashboard");
+      setRedirecting(true);
+      router.replace("/dashboard");
       return;
     }
     openSignIn({ appearance: MODAL_APPEARANCE, fallbackRedirectUrl: "/dashboard" });
@@ -41,11 +50,19 @@ export function SignInLauncher() {
     <button
       type="button"
       onClick={handleClick}
-      disabled={!isLoaded}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-amber-300 shadow-sm hover:bg-navy-800"
+      disabled={!isLoaded || redirecting}
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-3 text-sm font-semibold text-amber-300 shadow-sm hover:bg-navy-800 disabled:cursor-wait disabled:opacity-70"
     >
-      Sign in
-      <ArrowRight className="h-4 w-4" />
+      {!isLoaded || redirecting ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
+        </>
+      ) : (
+        <>
+          Sign in
+          <ArrowRight className="h-4 w-4" />
+        </>
+      )}
     </button>
   );
 }
